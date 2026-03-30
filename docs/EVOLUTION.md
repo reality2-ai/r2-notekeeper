@@ -152,55 +152,152 @@ A background process monitors redundancy levels:
 
 ---
 
-## 4. Content-Type-Specific Metadata
+## 4. Metadata
 
-### 4.1 Notes (Phase 1)
+### 4.1 Core Metadata (all content, all phases)
+
+Every stored object carries core metadata that is replicated to ALL
+devices in the trust group — regardless of whether the device stores the
+actual content. This enables every device to search, browse, and filter
+the full catalogue.
+
+```json
+{
+  "id": "obj-a1b2c3d4",
+  "content_type": "image/jpeg",
+  "hash": "sha256:...",
+  "size": 2457600,
+  "created_at": "2026-03-31T14:23:00Z",
+  "created_by": "device-id",
+  "modified_at": "2026-03-31T15:30:00Z",
+  "modified_by": "device-id",
+
+  "who": "Roy Davies",
+  "what": "Photo of Wairoa River at flood stage",
+  "where": {
+    "name": "Wairoa River, Hawke's Bay",
+    "lat": -39.0567,
+    "lon": 177.0542
+  },
+  "when": "2026-03-31T14:23:00Z",
+  "tags": ["wairoa", "flood", "monitoring"],
+
+  "stored_on": ["device-A", "device-B"],
+  "redundancy": 2,
+  "requested_redundancy": 2,
+  "retention_days": 90
+}
+```
+
+The core fields — **who, what, where, when** — are human-facing context
+that makes content discoverable across all devices. A watch shows "Roy's
+photo of Wairoa River flood, 2:23pm" without needing the actual image.
+A phone shows a thumbnail. The home server has the full resolution file.
+
+Core metadata is small (~500 bytes per object). A collection of 10,000
+objects produces ~5MB of metadata — trivially fits on any device,
+including a watch.
+
+### 4.2 Content-Type-Specific Metadata
+
+Additional metadata fields depend on the content type. These extend the
+core metadata — they do not replace it.
+
+#### Notes (Phase 1)
 
 ```json
 {
   "content_type": "text/markdown",
-  "title": "string",
-  "tags": ["string"],
-  "links": [{ "target": "obj-id", "relation": "string" }],
-  "word_count": 342
+  "title": "River monitoring setup notes",
+  "word_count": 342,
+  "links": [{ "target": "obj-b2c3d4e5", "relation": "references" }],
+  "headings": ["Equipment", "Installation", "Calibration"]
 }
 ```
 
-### 4.2 Images (Phase 2)
+#### Images (Phase 2)
 
 ```json
 {
   "content_type": "image/jpeg",
   "dimensions": { "width": 4032, "height": 3024 },
-  "location": { "lat": -39.05, "lon": 177.05 },
-  "taken_at": "2026-03-31T14:23:00Z",
   "device_context": "rear_camera",
-  "exif": { ... }
+  "orientation": 1,
+  "thumbnail": "<base64 of 200px thumbnail>"
 }
 ```
 
-### 4.3 Voice Memos (Phase 2)
+Note: `thumbnail` is included in the metadata so devices that don't
+store the full image can still display a preview. Thumbnails are
+typically 5-15KB — still small enough to replicate everywhere.
+
+#### Voice Memos (Phase 2)
 
 ```json
 {
   "content_type": "audio/opus",
   "duration_secs": 45,
   "sample_rate": 48000,
-  "transcript": "optional text transcription"
+  "transcript": "Checked sensor three at the bridge. Water level is..."
 }
 ```
 
-### 4.4 Documents (Phase 2)
+Transcripts enable text search across voice memos from any device.
+
+#### Documents (Phase 2)
 
 ```json
 {
   "content_type": "application/pdf",
-  "title": "string",
-  "author": "string",
-  "pages": 12,
-  "extracted_text": "optional full text"
+  "title": "Wairoa Flood Risk Assessment 2026",
+  "author": "Hawke's Bay Regional Council",
+  "pages": 42,
+  "summary": "Assessment of flood risk for the Wairoa River catchment..."
 }
 ```
+
+#### Epistemic Content (Phase 3 — Anthill)
+
+```json
+{
+  "confidence": 0.85,
+  "log_odds": 1.763,
+  "evidence_types_seen": ["corroboration", "refutation_survived"],
+  "citations": ["cite-a1b2c3d4"],
+  "source_id": "ant:Alfred",
+  "beneficial_impact": 0.6,
+  "decay_category": "fact",
+  "half_life_days": 30,
+  "last_evidence_at": "2026-03-28T15:00:00Z"
+}
+```
+
+### 4.3 Metadata as Knowledge Graph
+
+The metadata catalogue is itself a lightweight knowledge graph:
+
+- **Nodes** are content objects (notes, photos, documents).
+- **Edges** are links between them (note references photo, document
+  cites another document, voice memo describes a location).
+- **Tags** provide a flat taxonomy.
+- **Who/what/where/when** provide faceted search dimensions.
+
+This graph is small enough to replicate to every device and query
+locally. As the notekeeper evolves toward Anthill integration (Phase 3),
+the metadata graph becomes a proper epistemic graph with confidence,
+evidence, and citations — the same structure as ANTHILL-KNOWLEDGE.
+
+### 4.4 Metadata Replication
+
+All metadata MUST be replicated to all devices in the trust group:
+
+- Metadata events use the same sync protocol as content events.
+- Metadata is included in the JSONL event log.
+- Content placement (`stored_on`) is metadata — all devices know where
+  everything is, even if they don't have it locally.
+- Unknown metadata fields MUST be preserved during sync — a Phase 1
+  device syncing with a Phase 2 device MUST NOT drop fields it doesn't
+  understand.
 
 ### 4.5 Epistemic Content (Phase 3)
 
