@@ -1,0 +1,1 @@
+{application,notekeeper,[{modules,['Elixir.Notekeeper','Elixir.Notekeeper.Application']},{optional_applications,[]},{applications,[kernel,stdlib,elixir,logger,r2_nif,r2_core,jason]},{description,"notekeeper"},{registered,[]},{vsn,"0.1.0"},{mod,{'Elixir.Notekeeper.Application',[]}}]}.
