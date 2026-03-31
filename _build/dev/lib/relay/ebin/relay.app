@@ -1,1 +1,0 @@
-{application,relay,[{modules,['Elixir.Relay','Elixir.Relay.Application']},{optional_applications,[]},{applications,[kernel,stdlib,elixir,logger,r2_nif,plug_cowboy,jason]},{description,"relay"},{registered,[]},{vsn,"0.1.0"},{mod,{'Elixir.Relay.Application',[]}}]}.

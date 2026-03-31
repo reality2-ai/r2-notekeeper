@@ -1,2 +1,20 @@
+# Build and deps
+/_build/
+/deps/
+*.beam
+
+# Generated on crash
+erl_crash.dump
+
+# Data directories
+/data/
+
+# Python
 *.pyc
 __pycache__/
+
+# Editor/IDE
+.elixir_ls/
+.vscode/
+*.swp
+*~
