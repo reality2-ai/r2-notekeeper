@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R2 Conformance Tests</title>
+    <style>
+        :root { --bg: #0e0e12; --surface: #16161d; --green: #6ecb8b; --red: #e05555; --amber: #d4a853; --text: #d8d4cf; --dim: #706c65; --mono: 'JetBrains Mono', 'SF Mono', monospace; --sans: 'DM Sans', -apple-system, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--sans); background: var(--bg); color: var(--text); padding: 24px; max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 24px; font-weight: 700; color: var(--amber); margin-bottom: 4px; }
+        .sub { font-size: 13px; color: var(--dim); margin-bottom: 24px; }
+        h2 { font-size: 16px; font-weight: 600; color: var(--amber); margin: 24px 0 8px; padding-top: 16px; border-top: 1px solid rgba(212,168,83,0.08); }
+        .test { font-family: var(--mono); font-size: 12px; padding: 3px 0; }
+        .pass { color: var(--green); }
+        .fail { color: var(--red); }
+        .info { color: var(--dim); }
+        .summary { font-size: 18px; font-weight: 700; margin-top: 24px; padding: 16px; background: var(--surface); border-radius: 8px; }
+    </style>
+</head>
+<body>
+<h1>R2 Conformance Tests</h1>
+<p class="sub">Running spec test vectors against r2-wasm</p>
+<div id="out"></div>
+
+<script type="module">
+    import init, * as r2 from './pkg/r2_wasm.js';
+
+    const out = document.getElementById('out');
+    let passed = 0, failed = 0, total = 0;
+
+    function section(name) { out.innerHTML += `<h2>${name}</h2>`; }
+    function log(msg, cls) { out.innerHTML += `<div class="test ${cls}">${msg}</div>`; }
+
+    function assert(name, condition, detail = '') {
+        total++;
+        if (condition) { passed++; log(`PASS  ${name}`, 'pass'); }
+        else { failed++; log(`FAIL  ${name}  ${detail}`, 'fail'); }
+    }
+
+    function hexToU32(hex) { return parseInt(hex, 16) >>> 0; }
+
+    await init();
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-FNV Conformance Vectors (from r2-fnv-vectors.json)
+    // ═══════════════════════════════════════════════════════════
+    section('R2-FNV: Conformance Vectors (33 tests)');
+
+    const fnvVectors = [
+        ["read_level", 0x424D3E4C], ["set_temp", 0x745B28B2], ["water_level", 0x49B47465],
+        ["set_color", 0xC98950FB], ["get_status", 0xA8E6815A], ["display_image", 0x56179273],
+        ["clear", 0x5C6E1222], ["calibrate", 0xBD2F7702], ["alert", 0xB7C358F9],
+        ["evacuate", 0x79E8481B], ["message", 0x24F208E4], ["ping", 0x165DF089],
+        ["pong", 0x7ADB16B7], ["join", 0xC922BC79], ["leave", 0x5473C0C0],
+        ["heartbeat", 0xA79E4417], ["capability", 0xB4CF5A27], ["ack", 0x3A4A5A02],
+        ["subscribe", 0xAF9E4A03], ["unsubscribe", 0xF9BEFE96], ["broadcast", 0xE2D789D4],
+        ["#ping", 0x7CB36B0A], ["#pong", 0x1130DCC8], ["#heartbeat", 0x5D6B02AE],
+        ["#capability", 0xF24C0E88], ["#join", 0xFAD8225E], ["#leave", 0x2FD66589],
+        ["#ack", 0xB4A426EF], ["#subscribe", 0xFB90EBEE], ["#unsubscribe", 0x25174D77],
+        ["#broadcast", 0xFAECDE75], ["#wifi_req", 0xC85B18A8], ["#wifi_offer", 0x01F77656],
+        ["#wifi_done", 0x89A70310],
+    ];
+    for (const [input, expected] of fnvVectors) {
+        const got = r2.r2_hash(input);
+        assert(`r2_hash("${input}") = 0x${expected.toString(16).toUpperCase()}`, got === expected, `got 0x${got.toString(16).toUpperCase()}`);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-FNV Canonicalisation Vectors
+    // ═══════════════════════════════════════════════════════════
+    section('R2-FNV: Canonicalisation (11 tests)');
+
+    const canonVectors = [
+        ["Set_Temp", 0x745B28B2], ["SET_TEMP", 0x745B28B2], ["sEt_TeMp", 0x745B28B2],
+        ["  set_temp  ", 0x745B28B2], ["\tset_temp\n", 0x745B28B2], ["set _temp", 0x745B28B2],
+        ["  Set_Temp ", 0x745B28B2], ["s e t _ t e m p", 0x745B28B2],
+        ["#PING", 0x7CB36B0A], ["  #PING  ", 0x7CB36B0A], ["# ping", 0x7CB36B0A],
+    ];
+    for (const [input, expected] of canonVectors) {
+        const got = r2.r2_hash(input);
+        assert(`r2_hash("${input.replace(/\t/g,'\\t').replace(/\n/g,'\\n')}") = 0x${expected.toString(16).toUpperCase()}`, got === expected, `got 0x${got.toString(16).toUpperCase()}`);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-FNV Error Vectors
+    // ═══════════════════════════════════════════════════════════
+    section('R2-FNV: Error Vectors (3 tests)');
+
+    for (const input of ["", "   ", "\t\n"]) {
+        let threw = false;
+        try { r2.r2_hash(input); } catch { threw = true; }
+        assert(`r2_hash("${input.replace(/\t/g,'\\t').replace(/\n/g,'\\n')}") throws`, threw);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-FNV Collision Check
+    // ═══════════════════════════════════════════════════════════
+    section('R2-FNV: Collision & Reservation Check');
+
+    const allHashes = fnvVectors.map(([_, h]) => h);
+    const uniqueHashes = new Set(allHashes);
+    assert('All conformance hashes are distinct', uniqueHashes.size === allHashes.length, `${allHashes.length} vectors, ${uniqueHashes.size} unique`);
+    assert('No hash equals 0x00000000 (reserved)', !allHashes.includes(0x00000000));
+    assert('No hash equals 0xFFFFFFFF (reserved)', !allHashes.includes(0xFFFFFFFF));
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-CBOR Conformance Vectors
+    // ═══════════════════════════════════════════════════════════
+    section('R2-CBOR: Encoding Vectors (selected)');
+
+    // TV2: {1: 42}
+    const cbor_tv2 = r2.cbor_encode_int_map(new Uint8Array([1]), new Uint32Array([42]));
+    assert('CBOR TV2 {1:42}', hex(cbor_tv2) === 'a101182a', `got ${hex(cbor_tv2)}`);
+
+    // TV12: {1: 2550, 2: 6230}
+    const cbor_tv12 = r2.cbor_encode_int_map(new Uint8Array([1, 2]), new Uint32Array([2550, 6230]));
+    assert('CBOR TV12 {1:2550, 2:6230}', hex(cbor_tv12) === 'a2011909f602191856', `got ${hex(cbor_tv12)}`);
+
+    // TV15: {1: 255, 2: 128, 3: 0}
+    const cbor_tv15 = r2.cbor_encode_int_map(new Uint8Array([1, 2, 3]), new Uint32Array([255, 128, 0]));
+    assert('CBOR TV15 {1:255, 2:128, 3:0}', hex(cbor_tv15) === 'a30118ff02188003 00', `got ${hex(cbor_tv15)}`);
+
+    // TV11: {3: 1771027200}
+    const cbor_tv11 = r2.cbor_encode_int_map(new Uint8Array([3]), new Uint32Array([1771027200]));
+    assert('CBOR TV11 {3:1771027200}', hex(cbor_tv11) === 'a1031a698fbb00', `got ${hex(cbor_tv11)}`);
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-WIRE Compact Frame Vectors
+    // ═══════════════════════════════════════════════════════════
+    section('R2-WIRE: Compact Frame Vectors');
+
+    // TV1: Minimal EVENT compact
+    const tv1_payload = hexBytes('A10018EA');
+    const tv1_frame = r2.encode_compact_frame(0, 5, 3, 0xA1B2, 0x424D3E4C, 0x1A2B3C4D, tv1_payload);
+    assert('TV1 encode length = 16', tv1_frame.length === 16);
+    assert('TV1 wire hex matches', hex(tv1_frame) === '0053a1b2424d3e4c1a2b3c4da10018ea', `got ${hex(tv1_frame)}`);
+
+    // TV1 decode roundtrip
+    const tv1_dec = r2.decode_compact_frame(tv1_frame);
+    assert('TV1 decode msg_type = EVENT (0)', tv1_dec.msg_type === 0);
+    assert('TV1 decode ttl = 5', tv1_dec.ttl === 5);
+    assert('TV1 decode k = 3', tv1_dec.k === 3);
+    assert('TV1 decode msg_id = 0xA1B2', tv1_dec.msg_id === 0xA1B2);
+    assert('TV1 decode event_hash = 0x424D3E4C', tv1_dec.event_hash === 0x424D3E4C);
+    assert('TV1 decode target = 0x1A2B3C4D', tv1_dec.target === 0x1A2B3C4D);
+    assert('TV1 decode payload = A10018EA', hex(new Uint8Array(tv1_dec.payload)) === 'a10018ea');
+
+    // TV3: MCU origin EVENT
+    const tv3_payload = hexBytes('A10018BB');
+    const tv3_frame = r2.encode_compact_frame(0, 2, 1, 0x0007, 0x49B47465, 0x00000000, tv3_payload);
+    assert('TV3 encode length = 16', tv3_frame.length === 16);
+
+    const tv3_dec = r2.decode_compact_frame(tv3_frame);
+    assert('TV3 decode event_hash = water_level', tv3_dec.event_hash === 0x49B47465);
+    assert('TV3 decode target = broadcast (0)', tv3_dec.target === 0);
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-WIRE Transcoding
+    // ═══════════════════════════════════════════════════════════
+    section('R2-WIRE: Transcoding');
+
+    const ext = r2.transcode_to_extended(tv1_frame);
+    assert('Compact->Extended produces larger frame', ext.length > tv1_frame.length);
+    const back = r2.transcode_to_compact(ext);
+    assert('Extended->Compact roundtrip length = 16', back.length === 16);
+    const back_dec = r2.decode_compact_frame(back);
+    assert('Roundtrip preserves event_hash', back_dec.event_hash === 0x424D3E4C);
+    assert('Roundtrip preserves target', back_dec.target === 0x1A2B3C4D);
+    assert('Roundtrip preserves payload', hex(new Uint8Array(back_dec.payload)) === 'a10018ea');
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-TRUST: Key Derivation
+    // ═══════════════════════════════════════════════════════════
+    section('R2-TRUST: Trust Group Lifecycle');
+
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const tg = new r2.R2TrustGroup(now);
+    assert('Trust group created', tg.public_key.length === 32);
+    assert('DEK is 32 bytes', tg.dek.length === 32);
+    assert('HK is 32 bytes', tg.hk.length === 32);
+    assert('DEK != HK', hex(tg.dek) !== hex(tg.hk));
+
+    // Join handshake
+    const kp = r2.generate_device_keypair();
+    assert('Device keypair: sk=32, pk=32', kp.secret_key.length === 32 && kp.public_key.length === 32);
+
+    const code = tg.generate_join_code(now, BigInt(300));
+    assert('Join code is 32 hex chars', code.length === 32);
+
+    const enc = tg.process_join(code, new Uint8Array(kp.public_key), 'test-device', now);
+    assert('Encrypted join response generated', enc.length > 0);
+    assert('Member count = 1', tg.member_count === 1);
+
+    const member = r2.complete_join(new Uint8Array(kp.secret_key), new Uint8Array(tg.public_key), enc, now);
+    assert('Member created', member !== null);
+    assert('Member TG ID matches', hex(member.trust_group_id) === hex(tg.public_key));
+    assert('Member HK matches TG HK', hex(member.hk) === hex(tg.hk));
+    assert('Member DEK matches TG DEK', hex(member.dek) === hex(tg.dek));
+    assert('Certificate valid now', member.is_valid(now));
+    assert('Certificate valid in 1 hour', member.is_valid(now + BigInt(3600)));
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-TRUST: HMAC
+    // ═══════════════════════════════════════════════════════════
+    section('R2-TRUST: HMAC Sign/Verify');
+
+    const tag = r2.hmac_compact_tag(tv1_frame, new Uint8Array(member.hk));
+    assert('HMAC tag is 8 bytes', tag.length === 8);
+    assert('HMAC tag is non-zero', tag.some(b => b !== 0));
+
+    // Same frame + same key = same tag (deterministic)
+    const tag2 = r2.hmac_compact_tag(tv1_frame, new Uint8Array(member.hk));
+    assert('HMAC is deterministic', hex(tag) === hex(tag2));
+
+    // Different key = different tag
+    const fakeHk = new Uint8Array(32);
+    fakeHk.fill(0x42);
+    const tag3 = r2.hmac_compact_tag(tv1_frame, fakeHk);
+    assert('Different key = different tag', hex(tag) !== hex(tag3));
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-TRUST: Encryption (DEK)
+    // ═══════════════════════════════════════════════════════════
+    section('R2-TRUST: DEK Encryption');
+
+    const plaintext = new TextEncoder().encode('Hello from R2 conformance test');
+    const encrypted = r2.encrypt_with_dek(new Uint8Array(member.dek), plaintext);
+    assert('Encrypted output > plaintext (nonce + tag)', encrypted.length > plaintext.length);
+    assert('Encrypted output = plaintext + 24 (nonce) + 16 (tag)', encrypted.length === plaintext.length + 40);
+
+    const decrypted = r2.decrypt_with_dek(new Uint8Array(member.dek), encrypted);
+    assert('Decryption recovers plaintext', new TextDecoder().decode(decrypted) === 'Hello from R2 conformance test');
+
+    // Wrong key fails
+    let decryptFailed = false;
+    try { r2.decrypt_with_dek(fakeHk, encrypted); } catch { decryptFailed = true; }
+    assert('Wrong key fails decryption', decryptFailed);
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-TRUST: Persist/Restore
+    // ═══════════════════════════════════════════════════════════
+    section('R2-TRUST: Persist/Restore');
+
+    const memberBytes = member.to_bytes();
+    assert('Member serializes to 277 bytes', memberBytes.length === 277);
+
+    const restored = r2.R2Member.from_bytes(memberBytes);
+    assert('Restored PK matches', hex(restored.public_key) === hex(member.public_key));
+    assert('Restored TG ID matches', hex(restored.trust_group_id) === hex(member.trust_group_id));
+    assert('Restored HK matches', hex(restored.hk) === hex(member.hk));
+    assert('Restored DEK matches', hex(restored.dek) === hex(member.dek));
+    assert('Restored cert valid', restored.is_valid(now));
+
+    // HMAC from restored member = same as original
+    const restoredTag = r2.hmac_compact_tag(tv1_frame, new Uint8Array(restored.hk));
+    assert('Restored HMAC matches original', hex(restoredTag) === hex(tag));
+
+    const tgBytes = tg.to_bytes();
+    assert('TG serializes to 38 bytes', tgBytes.length === 38);
+
+    const restoredTg = r2.R2TrustGroup.from_bytes(tgBytes, now);
+    assert('Restored TG PK matches', hex(restoredTg.public_key) === hex(tg.public_key));
+    assert('Restored TG DEK matches', hex(restoredTg.dek) === hex(tg.dek));
+    assert('Restored TG HK matches', hex(restoredTg.hk) === hex(tg.hk));
+
+    // ═══════════════════════════════════════════════════════════
+    // R2-TRANSPORT: Framing
+    // ═══════════════════════════════════════════════════════════
+    section('R2-TRANSPORT: Framing');
+
+    const le = r2.frame_with_le_prefix(tv1_frame);
+    assert('LE prefix: length + 2', le.length === tv1_frame.length + 2);
+    assert('LE byte 0 = low byte', le[0] === (tv1_frame.length & 0xFF));
+    assert('LE byte 1 = high byte', le[1] === ((tv1_frame.length >> 8) & 0xFF));
+
+    const be = r2.frame_with_be_prefix(tv1_frame);
+    assert('BE prefix: length + 4', be.length === tv1_frame.length + 4);
+    assert('BE byte 3 = low byte', be[3] === (tv1_frame.length & 0xFF));
+
+    // ═══════════════════════════════════════════════════════════
+    // Summary
+    // ═══════════════════════════════════════════════════════════
+
+    out.innerHTML += `<div class="summary ${failed === 0 ? 'pass' : 'fail'}">${passed}/${total} passed${failed > 0 ? `, ${failed} FAILED` : ' - all conformance tests pass'}</div>`;
+    out.innerHTML += `<div class="test info" style="margin-top:8px">r2-wasm ${r2.r2_version()} | Specs: R2-FNV 0.2, R2-CBOR 0.1, R2-WIRE 0.1, R2-TRUST</div>`;
+
+    // Helpers
+    function hex(bytes) { return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(''); }
+    function hexBytes(h) { const b = new Uint8Array(h.length / 2); for (let i = 0; i < h.length; i += 2) b[i/2] = parseInt(h.substring(i, i+2), 16); return b; }
+</script>
+</body>
+</html>
