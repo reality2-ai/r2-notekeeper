@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  Private notes on the <a href="https://reality2-ai.github.io">Reality2</a> mesh.<br>
+  Private notes on your <a href="https://reality2-ai.github.io">Reality2</a> mesh.<br>
   End-to-end encrypted. No server. No cloud. No account.
 </p>
 
@@ -148,7 +148,7 @@ If you install Notekeeper as an app (see above), the page itself is cached too �
 
 ## How it works
 
-Notekeeper is built with the Reality2 protocol stack, compiled to WebAssembly (70KB). When you open the page, the R2 stack loads in your browser and your browser becomes a node in the mesh.
+Notekeeper is built with the Reality2 protocol stack, compiled to WebAssembly (70KB). When you open the page, the R2 stack loads in your browser and your browser becomes a node in your mesh.
 
 - **Trust group** — your devices share a cryptographic identity
 - **Events** — each note operation (create, edit, delete) produces a signed R2 event
