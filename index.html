@@ -572,7 +572,7 @@ function generateQrSvg(text, size) {
         var qr = qrcode(0, 'L');
         qr.addData(text);
         qr.make();
-        return qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+        return qr.createSvgTag(4, 4);
     } catch (e) {
         console.warn('QR generation failed:', e);
         return '';
