@@ -1,6 +1,13 @@
-# R2 Notekeeper
+# Notekeeper
 
-Private notes on the [Reality2](https://reality2-ai.github.io) mesh. End-to-end encrypted. No server. No cloud. No account.
+<p align="center">
+  <img src="icons/notekeeper.svg" width="96" alt="Notekeeper">
+</p>
+
+<p align="center">
+  Private notes on the <a href="https://reality2-ai.github.io">Reality2</a> mesh.<br>
+  End-to-end encrypted. No server. No cloud. No account.
+</p>
 
 Notekeeper runs entirely in your web browser. Your notes are encrypted with keys that never leave your devices. A [relay](https://github.com/reality2-ai/r2-relay) connects your devices to each other — but it can't read your notes.
 
