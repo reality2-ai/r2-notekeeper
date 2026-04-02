@@ -88,6 +88,30 @@ Both devices are now in the same trust group. Notes sync automatically through t
 - Trust group keys are stored in your browser's local storage
 - Clearing your browser data will remove your trust group membership — you would need to rejoin from another device
 
+## Common Questions
+
+**I opened Notekeeper in a different browser and had to join again. Why?**
+
+Each browser keeps its own separate storage. Chrome, Firefox, Safari, and Edge don't share data with each other — even on the same computer. A private/incognito window is also separate. Each one is a different "device" as far as Notekeeper is concerned.
+
+This is by design. Your trust group keys are stored in the browser that created them. If any browser could access another browser's keys, that would be a security problem.
+
+To use Notekeeper in a new browser, join the trust group from there — open Settings on a browser that's already a member, generate an invitation, and use it in the new browser. Your notes will sync across.
+
+**I cleared my browser data and lost my trust group. Can I get back in?**
+
+If you have another device still in the trust group, yes — generate a new invitation from that device and rejoin. If all your devices have been cleared, the trust group is gone. There is no password recovery, no server with a backup, no "forgot my account" flow. The keys existed only on your devices.
+
+This is the trade-off of true privacy: no one can recover your data for you, because no one else ever had it.
+
+**Can I use Notekeeper without a relay?**
+
+Yes — for notes on a single device. You can create a trust group, write notes, and they'll persist in your browser. You just won't be able to sync to other devices without a relay connecting them.
+
+**Can other people read my notes if they run the relay?**
+
+No. The relay forwards encrypted bytes. It doesn't have your trust group keys and cannot decrypt anything that passes through it. Even if someone captures all the traffic, they see only ciphertext.
+
 ## How it works
 
 Notekeeper is built with the Reality2 protocol stack, compiled to WebAssembly (70KB). When you open the page, the R2 stack loads in your browser and your browser becomes a node in the mesh.
