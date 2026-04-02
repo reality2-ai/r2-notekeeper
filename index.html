@@ -1159,7 +1159,9 @@ function generateQrSvg(text, size) {
         if (!confirm('Delete this note?')) return;
         notes[currentNoteId].deleted = true; notes[currentNoteId].updated_at = nowNum();
         emitNoteEvent(2, currentNoteId); saveNotes();
-        currentNoteId = null; renderNoteList(); renderEditor();
+        currentNoteId = null;
+        document.getElementById('editor').classList.remove('mobile-visible');
+        renderNoteList(); renderEditor();
     };
     window.selectNote = function(id) {
         flushIfDirty(); currentNoteId = id; updateSyncIndicator('');
