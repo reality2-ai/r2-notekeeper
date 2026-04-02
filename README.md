@@ -40,15 +40,13 @@ The script builds and installs everything. Your relay address will be `ws://<you
 
 Open the Notekeeper page in your browser. You'll see a screen asking you to create or join a trust group.
 
-### Step 3: Create a trust group
+### Step 3: Create or join a trust group
 
-A trust group is your private space. Only devices you add can see your notes.
+A trust group is your private space. Only devices in the group can see your notes.
 
-1. Enter a name for this device (e.g. "My Laptop")
-2. Enter the relay address (e.g. `ws://192.168.1.50:21042/r2`)
-3. Click **Create New Notekeeper**
+**Starting fresh?** Enter a device name, the relay address, and click **Create New Notekeeper**. This creates a new trust group just for you.
 
-You're in. Start writing.
+**Already have a trust group** from another R2 capability (like Anthill or TrustTalk)? You don't need a new one — join the existing group using an invitation code from any device that's already a member. Your notes will share the same trust group and the same devices.
 
 ### Step 4: Add another device
 
@@ -133,6 +131,12 @@ Yes. In most browsers, you can install Notekeeper so it appears alongside your o
 - **macOS (Safari):** File menu, then "Add to Dock"
 
 Once installed, Notekeeper opens in its own window without browser chrome — it looks and feels like a regular app. The icon appears in your app launcher, taskbar, or home screen.
+
+**Can I use an existing trust group from another R2 capability?**
+
+Yes. A trust group is not tied to any single capability. If you already have a trust group from Anthill, TrustTalk, or any other R2 tool, you can join that same group in Notekeeper. Your notes will be accessible on all the devices that are already members — no need to invite them again.
+
+Just use an invitation code from any device in the existing group, and join from the Notekeeper screen.
 
 **Can I just bookmark it?**
 
