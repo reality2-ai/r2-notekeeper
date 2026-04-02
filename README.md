@@ -123,6 +123,12 @@ Yes. In most browsers, you can install Notekeeper so it appears alongside your o
 
 Once installed, Notekeeper opens in its own window without browser chrome — it looks and feels like a regular app. The icon appears in your app launcher, taskbar, or home screen.
 
+**Can I just bookmark it?**
+
+Yes — that's the simplest way to use Notekeeper. Bookmark the page, come back anytime. Your trust group membership and notes are stored in your browser and will be there when you return. You don't need to install it as an app unless you want the full-screen experience and home screen icon.
+
+The only thing that would lose your data is clearing your browser's site data for this page (or using private/incognito mode, which doesn't keep anything after the window closes).
+
 **Does it work offline?**
 
 Your notes are always available offline — they're stored in your browser's local storage. You can read and edit them without any internet connection.
