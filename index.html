@@ -1662,6 +1662,11 @@ function generateQrSvg(text, size) {
     const savedTheme = localStorage.getItem('r2_theme');
     if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
 
+    // Register service worker for offline support
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
     async function start() {
         await init();
         HASH_CREATE = r2.r2_hash('note.create');
