@@ -350,7 +350,7 @@
         <p class="subtitle">Private notes on the R2 mesh.<br>No server. No cloud. End-to-end encrypted.</p>
         <div class="field">
             <input id="join-code" class="field-input" placeholder="Paste link or type xxxx-xxxx-xxxx-xxxx" style="font-family:var(--mono);font-size:14px;text-align:center;letter-spacing:2px"
-                   oninput="formatShortCode(this)" maxlength="14">
+                   oninput="formatShortCode(this)" maxlength="19">
         </div>
         <div class="field">
             <input id="join-name" class="field-input" placeholder="Device name">
@@ -726,10 +726,12 @@ function generateQrSvg(text, size) {
         return bytes;
     }
     function formatShortCode(input) {
-        let v = input.value.replace(/[^a-fA-F0-9]/g, '').substring(0, 12);
-        if (v.length > 8) v = v.substring(0, 4) + '-' + v.substring(4, 8) + '-' + v.substring(8);
-        else if (v.length > 4) v = v.substring(0, 4) + '-' + v.substring(4);
-        input.value = v;
+        // Only format if it looks like a short code being typed (hex chars, not a URL)
+        if (input.value.includes('http') || input.value.includes(',')) return;
+        let v = input.value.replace(/[^a-fA-F0-9]/g, '').substring(0, 16);
+        let parts = [];
+        for (let i = 0; i < v.length; i += 4) parts.push(v.substring(i, i + 4));
+        input.value = parts.join('-');
     }
 
     // Format short code: xxxx-xxxx-xxxx-xxxx (first 8 hex of TG hash + first 8 hex of join code)
