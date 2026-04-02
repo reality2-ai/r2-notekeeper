@@ -515,6 +515,31 @@
             <span class="value" id="settings-relay-status">—</span>
         </div>
     </div>
+    <div class="settings-section" id="settings-devices-section" style="display:none">
+        <h3>Devices</h3>
+        <div id="settings-devices-list" style="margin-bottom:12px"></div>
+    </div>
+    <div class="settings-section" id="settings-key-section" style="display:none">
+        <h3>Trust Group Key</h3>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Back up your trust group key so you can restore it if all your devices are lost. Keep it somewhere safe — anyone with this key can create new invitations.</p>
+        <div id="settings-key-display" style="display:none;margin-bottom:12px">
+            <div class="invite-code-display" id="settings-key-value" onclick="copyKey()" style="font-size:10px"></div>
+            <div style="font-size:10px;color:var(--text-faint);margin-top:4px">Click to copy. Store in a password manager or write it down.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-small btn-secondary" onclick="exportKey()">Export Key</button>
+            <button class="btn btn-small btn-secondary" onclick="downloadKey()">Download</button>
+        </div>
+    </div>
+    <div class="settings-section">
+        <h3>Restore</h3>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Restore a trust group from a previously exported key.</p>
+        <div style="display:flex;gap:8px">
+            <input id="settings-restore-input" class="field-input" placeholder="Paste key here" style="font-family:var(--mono);font-size:11px;padding:8px 12px;flex:1">
+            <button class="btn btn-small btn-primary" onclick="restoreKey()">Restore</button>
+        </div>
+        <div id="settings-restore-error" style="font-size:12px;color:var(--red);margin-top:8px;display:none"></div>
+    </div>
     <div class="settings-section">
         <h3>Appearance</h3>
         <div style="display:flex;gap:8px">
@@ -1333,6 +1358,23 @@ function generateQrSvg(text, size) {
             // Show invite section for key holders
             if (isKeyHolder) {
                 document.getElementById('settings-invite-section').style.display = 'block';
+                document.getElementById('settings-key-section').style.display = 'block';
+                // Populate device list
+                document.getElementById('settings-devices-section').style.display = 'block';
+                const names = trustGroup.member_names();
+                const listEl = document.getElementById('settings-devices-list');
+                if (names && names.length > 0) {
+                    listEl.innerHTML = names.map(name =>
+                        `<div class="settings-row">
+                            <span class="label" style="display:flex;align-items:center;gap:6px">
+                                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+                                ${escHtml(name)}
+                            </span>
+                        </div>`
+                    ).join('');
+                } else {
+                    listEl.innerHTML = '<div style="font-size:12px;color:var(--text-faint)">No other devices</div>';
+                }
             }
         }
     };
@@ -1390,6 +1432,71 @@ function generateQrSvg(text, size) {
             setTimeout(() => el.textContent = orig, 1000);
         });
     };
+    // ── Key Export/Import ──
+    window.exportKey = function() {
+        if (!trustGroup) return;
+        const keyBytes = trustGroup.to_bytes();
+        const keyB64 = btoa(String.fromCharCode(...keyBytes));
+        document.getElementById('settings-key-display').style.display = 'block';
+        document.getElementById('settings-key-value').textContent = keyB64;
+    };
+
+    window.copyKey = function() {
+        const el = document.getElementById('settings-key-value');
+        navigator.clipboard.writeText(el.textContent).then(() => {
+            const orig = el.textContent;
+            el.textContent = 'Copied!';
+            setTimeout(() => el.textContent = orig, 1000);
+        });
+    };
+
+    window.downloadKey = function() {
+        if (!trustGroup) return;
+        const keyBytes = trustGroup.to_bytes();
+        const keyB64 = btoa(String.fromCharCode(...keyBytes));
+        const blob = new Blob([keyB64], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `notekeeper-key-${hexShort(member.trust_group_id)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    };
+
+    window.restoreKey = function() {
+        const input = document.getElementById('settings-restore-input').value.trim();
+        const errEl = document.getElementById('settings-restore-error');
+        errEl.style.display = 'none';
+        if (!input) { errEl.textContent = 'Paste a key first.'; errEl.style.display = 'block'; return; }
+        try {
+            const bytes = new Uint8Array(atob(input).split('').map(c => c.charCodeAt(0)));
+            const restored = r2.R2TrustGroup.from_bytes(bytes, now());
+            trustGroup = restored;
+            isKeyHolder = true;
+            // Self-join the restored group
+            const kp = r2.generate_device_keypair();
+            const deviceName = localStorage.getItem(SK_DEVICE_NAME) || 'restored';
+            const code = trustGroup.generate_join_code(now(), BigInt(300));
+            const enc = trustGroup.process_join(code, new Uint8Array(kp.public_key), deviceName, now());
+            member = r2.complete_join(new Uint8Array(kp.secret_key), new Uint8Array(trustGroup.public_key), enc, now());
+            saveAuth();
+            toggleSettings();
+            initApp();
+        } catch (e) {
+            errEl.textContent = 'Invalid key: ' + (e.message || e);
+            errEl.style.display = 'block';
+        }
+    };
+
+    // ── Device Management ──
+    window.revokeDevice = function(devicePkHex, deviceName) {
+        if (!trustGroup || !isKeyHolder) return;
+        if (!confirm(`Remove "${deviceName}" from the trust group?`)) return;
+        // TODO: wire to trustGroup.revoke when exposed in r2-wasm
+        alert('Device revocation is not yet implemented in the WASM layer.');
+    };
+
     window.updateRelay = function() {
         const url = document.getElementById('settings-relay-input').value.trim();
         if (relay) relay.disconnect();
