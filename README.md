@@ -98,11 +98,13 @@ This is by design. Your trust group keys are stored in the browser that created 
 
 To use Notekeeper in a new browser, join the trust group from there — open Settings on a browser that's already a member, generate an invitation, and use it in the new browser. Your notes will sync across.
 
-**I cleared my browser data and lost my trust group. Can I get back in?**
+**I cleared my browser data (or uninstalled the browser) and lost my trust group. Can I get back in?**
 
-If you have another device still in the trust group, yes — generate a new invitation from that device and rejoin. If all your devices have been cleared, the trust group is gone. There is no password recovery, no server with a backup, no "forgot my account" flow. The keys existed only on your devices.
+If you have another device still in the trust group, yes — generate a new invitation from that device and rejoin. Your notes will sync back from the other device through the relay.
 
-This is the trade-off of true privacy: no one can recover your data for you, because no one else ever had it.
+If all your devices have been cleared, the trust group is gone. There is no password recovery, no server with a backup, no "forgot my account" flow. The keys existed only on your devices.
+
+This is the trade-off of true privacy: no one can recover your data for you, because no one else ever had it. This is why it's a good idea to have Notekeeper on more than one device — each one is a backup of the other.
 
 **Can I use Notekeeper without a relay?**
 
