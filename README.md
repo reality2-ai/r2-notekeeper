@@ -26,15 +26,7 @@ The relay connects your devices to each other. Without a relay, Notekeeper works
 
 **Why would you run a relay on a remote server?** If your devices aren't always on the same network — say your laptop is at home and your phone is on mobile data — they can't reach each other directly. A relay on a cheap server (a $5/month VPS, or a Raspberry Pi with a public IP) gives them a meeting point that's always reachable.
 
-**To set up your own relay**, see the [Relay guide](https://github.com/reality2-ai/r2-relay). The quick version:
-
-```
-git clone https://github.com/reality2-ai/r2-relay.git
-cd r2-relay
-./install.sh
-```
-
-The script builds and installs everything. Your relay address will be `ws://<your-ip>:21042/r2`.
+**To set up your own relay**, see the [Relay](https://github.com/reality2-ai/r2-relay) page — it walks you through the whole process. Your relay address will be something like `ws://<your-ip>:21042/r2`.
 
 ### Step 2: Open Notekeeper
 
