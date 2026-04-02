@@ -1337,7 +1337,6 @@ function generateQrSvg(text, size) {
 
     function handleJoinMessage(data) {
         const msgType = data[1];
-        console.log('[R2] handleJoinMessage type:', msgType, 'isKeyHolder:', isKeyHolder, 'hasTG:', !!trustGroup);
         if (msgType === JOIN_REQUEST && isKeyHolder && trustGroup) {
             const devicePk = data.slice(2, 34);
             const joinCode = data.slice(34, 50);
@@ -1399,9 +1398,7 @@ function generateQrSvg(text, size) {
     };
     window.joinTrustGroup = function() {
         hideError();
-        console.log('[R2] joinTrustGroup called');
         const codeInput = document.getElementById('join-code').value.trim();
-        console.log('[R2] codeInput:', codeInput.substring(0, 30) + '...');
         const deviceName = document.getElementById('join-name').value.trim() || 'unnamed';
         let relayUrl = document.getElementById('relay-url').value.trim();
         if (!codeInput) { showError('Enter an invitation code.'); return; }
@@ -1445,7 +1442,6 @@ function generateQrSvg(text, size) {
         }
 
         try {
-            console.log('[R2] tgHash:', tgHash, 'joinCodeHex:', joinCodeHex?.substring(0, 8) + '...', 'relayUrl:', relayUrl);
             pendingInviteData = { trust_group_hash: tgHash, join_code_hex: joinCodeHex, tg_public_key: null };
             pendingJoinKeypair = r2.generate_device_keypair();
             localStorage.setItem(SK_RELAY_URL, relayUrl);
@@ -1453,19 +1449,14 @@ function generateQrSvg(text, size) {
             const devicePkHex = hex(new Uint8Array(pendingJoinKeypair.public_key));
             const ts = Math.floor(Date.now() / 1000);
             const helloMsg = `${tgHash}:${devicePkHex}:${ts}`;
-            console.log('[R2] HELLO msg:', helloMsg.substring(0, 40) + '...');
             const sigBytes = r2.sign_ed25519(new Uint8Array(pendingJoinKeypair.secret_key), new TextEncoder().encode(helloMsg));
             const helloJson = JSON.stringify({ type: 'hello', version: 1, trust_group: tgHash, device_id: devicePkHex, timestamp: ts, signature: hex(sigBytes) });
-            console.log('[R2] Opening WebSocket to', relayUrl);
             const ws = new WebSocket(relayUrl);
             ws.binaryType = 'arraybuffer';
-            ws.onopen = () => { console.log('[R2] WS open, sending HELLO'); ws.send(helloJson); };
             ws.onmessage = (evt) => {
-                console.log('[R2] WS message:', typeof evt.data === 'string' ? evt.data.substring(0, 50) : 'binary ' + evt.data.byteLength);
                 if (typeof evt.data === 'string') {
                     const msg = JSON.parse(evt.data);
                     if (msg.type === 'welcome') {
-                        console.log('[R2] Got WELCOME, peers:', msg.peers, '- sending join request');
                         const nameBytes = new TextEncoder().encode(deviceName);
                         const joinCodeBytes = hex_decode_js(joinCodeHex);
                         const req = new Uint8Array(2 + 32 + 16 + nameBytes.length);
@@ -1482,9 +1473,6 @@ function generateQrSvg(text, size) {
                     if (isJoinMessage(data) && data[1] === JOIN_RESPONSE) { handleJoinMessage(data); ws.close(); }
                 }
             };
-            ws.onerror = (e) => { console.log('[R2] WS error:', e); showError('Relay connection failed.'); };
-            ws.onclose = (evt) => { console.log('[R2] WS close code:', evt.code, evt.reason); if (!member && evt.code === 4401) showError('Auth failed.'); };
-        } catch (e) { console.log('[R2] join exception:', e); showError(e.message || e); }
     };
     window.toggleSettings = function() {
         const panel = document.getElementById('settings-panel');
@@ -1758,7 +1746,6 @@ function generateQrSvg(text, size) {
         if (relayUrl && !checkRelayUrl(relayUrl)) {
             relay = new R2RelayTransport(relayUrl, member);
             relay.onFrame = (data) => {
-                console.log('[R2] relay frame:', data[0], 'len:', data.length);
                 if (isJoinMessage(data)) handleJoinMessage(data);
                 else if (isPluginData(data)) handlePluginData(data);
                 else handleIncomingFrame(data);
