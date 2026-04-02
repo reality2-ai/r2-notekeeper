@@ -756,22 +756,24 @@ function generateQrSvg(text, size) {
     // Phone scans QR → opens notekeeper in browser → auto-fills invitation
     function buildInvitationUrl(relayUrl, tgHash, joinCodeHex) {
         const shortCode = joinCodeHex.substring(0, 12);
-        // Encode relay URL (strip ws:// prefix, will be re-added on parse)
+        // Encode relay URL: preserve wss/ws scheme as s/p prefix
+        const isSecure = relayUrl.startsWith('wss://');
         let relay = relayUrl.replace(/^wss?:\/\//, '').replace(/\/r2$/, '');
-        return `https://reality2-ai.github.io/r2-notekeeper/#join=${relay},${tgHash},${shortCode}`;
+        const scheme = isSecure ? 's' : 'p';
+        return `https://reality2-ai.github.io/r2-notekeeper/#join=${scheme},${relay},${tgHash},${shortCode}`;
     }
 
-    // Parse invitation URL: https://.../#join=relay,tg_hash,short_code
+    // Parse invitation URL: https://.../#join=s|p,relay,tg_hash,short_code
     function parseInvitationUrl(url) {
-        // Match the hash fragment format
         const hashMatch = url.match(/#join=(.+)$/);
-        if (hashMatch) url = hashMatch[1]; // extract just the data part
-        const m = url.match(/^([^,]+),([a-f0-9]{16}),([a-f0-9]{12})$/i);
+        if (hashMatch) url = hashMatch[1];
+        const m = url.match(/^([sp]),([^,]+),([a-f0-9]{16}),([a-f0-9]{12})$/i);
         if (!m) return null;
+        const wsScheme = m[1] === 's' ? 'wss' : 'ws';
         return {
-            relayUrl: `ws://${m[1]}/r2`,
-            tgHash: m[2],
-            joinCodeHex: m[3].padEnd(32, '0'),
+            relayUrl: `${wsScheme}://${m[2]}/r2`,
+            tgHash: m[3],
+            joinCodeHex: m[4].padEnd(32, '0'),
         };
     }
 
