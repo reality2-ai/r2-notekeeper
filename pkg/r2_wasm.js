@@ -520,6 +520,24 @@ export function decode_invite(invite) {
 }
 
 /**
+ * Decode 3 words back to trust group prefix (3 hex chars) + join code fragment.
+ *
+ * Input: "word1-word2-word3" or "word1 word2 word3"
+ * Returns JS object: { tg_prefix_hex: "abc", join_secret_hex: "123456" }
+ * @param {string} words
+ * @returns {any}
+ */
+export function decode_word_code(words) {
+    const ptr0 = passStringToWasm0(words, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.decode_word_code(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
  * Decrypt data with the trust group DEK (XChaCha20-Poly1305).
  *
  * Input: [nonce: 24 bytes] [ciphertext + auth tag] (as produced by encrypt_with_dek).
@@ -700,6 +718,39 @@ export function encode_note_payload(id, title, content, timestamp) {
     var v4 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v4;
+}
+
+/**
+ * Encode a trust group hash + join code as 3 words.
+ *
+ * `tg_hash_hex`: 16-char hex trust group hash
+ * `join_code_hex`: 32-char hex join code
+ * Returns: "word1-word2-word3"
+ * @param {string} tg_hash_hex
+ * @param {string} join_code_hex
+ * @returns {string}
+ */
+export function encode_word_code(tg_hash_hex, join_code_hex) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(tg_hash_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(join_code_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.encode_word_code(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
 }
 
 /**

@@ -353,7 +353,7 @@
         <h1>Notekeeper</h1>
         <p class="subtitle">Private notes on your R2 mesh.<br>No server. No cloud. End-to-end encrypted.</p>
         <div class="field">
-            <input id="join-code" class="field-input" placeholder="Paste link or type xxxx-xxxx-xxxx-xxxx" style="font-family:var(--mono);font-size:14px;text-align:center;letter-spacing:2px"
+            <input id="join-code" class="field-input" placeholder="Paste link or type three words" style="font-size:14px;text-align:center"
                    oninput="formatShortCode(this)">
         </div>
         <div class="field">
@@ -502,8 +502,8 @@
         <p id="settings-invite-keyholder-text" style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Generate a code to add another device to this trust group. Valid for 5 minutes, single use.</p>
         <div id="settings-invite-display" style="display:none">
             <div style="text-align:center;padding:16px 0 8px">
-                <div id="settings-short-code" style="font-family:var(--mono);font-size:28px;letter-spacing:4px;color:var(--accent);user-select:all;cursor:pointer" onclick="copyShortCode()"></div>
-                <div style="font-size:10px;color:var(--text-faint);margin-top:4px">Type this on the other device (they'll also need the relay address)</div>
+                <div id="settings-word-code" style="font-family:var(--sans);font-size:26px;font-weight:600;color:var(--accent);user-select:all;cursor:pointer" onclick="copyWordCode()"></div>
+                <div style="font-size:10px;color:var(--text-faint);margin-top:4px">Say these three words (they'll also need the relay address)</div>
             </div>
             <div style="margin-top:16px;text-align:center">
                 <div id="settings-qr-code" style="display:inline-block;background:white;padding:12px;border-radius:8px"></div>
@@ -741,12 +741,9 @@ function generateQrSvg(text, size) {
         return bytes;
     }
     window.formatShortCode = function(input) {
-        // Only format if it looks like a short code being typed (hex chars, not a URL)
-        if (input.value.includes('http') || input.value.includes(',')) return;
-        let v = input.value.replace(/[^a-fA-F0-9]/g, '').substring(0, 24);
-        let parts = [];
-        for (let i = 0; i < v.length; i += 4) parts.push(v.substring(i, i + 4));
-        input.value = parts.join('-');
+        // Don't format if it looks like a URL, word code, or pasted link
+        const v = input.value;
+        if (v.includes('http') || v.includes(',') || /[a-z]{3,}/.test(v)) return;
     };
 
     // Format short code: xxxx-xxxx-xxxx-xxxx (first 8 hex of TG hash + first 8 hex of join code)
@@ -1413,20 +1410,35 @@ function generateQrSvg(text, size) {
             joinCodeHex = urlParsed.joinCodeHex;
             document.getElementById('relay-url').value = relayUrl;
         } else {
-            // Try as short code (xxxx-xxxx-xxxx-xxxx)
-            const shortParsed = parseShortCode(codeInput);
-            if (shortParsed) {
-                tgHash = shortParsed.tgHash;
-                joinCodeHex = shortParsed.joinCodeHex;
-            } else {
-                // Try as base64url invitation (legacy)
+            // Try as word code (word1-word2-word3 or word1 word2 word3)
+            try {
+                const wordResult = r2.decode_word_code(codeInput);
+                if (wordResult) {
+                    tgHash = wordResult.tg_prefix_hex; // 3 hex chars (prefix match)
+                    joinCodeHex = wordResult.join_secret_hex.padEnd(32, '0');
+                }
+            } catch {}
+
+            // Try as hex short code if words didn't match
+            if (!tgHash) {
+                const shortParsed = parseShortCode(codeInput);
+                if (shortParsed) {
+                    tgHash = shortParsed.tgHash;
+                    joinCodeHex = shortParsed.joinCodeHex;
+                }
+            }
+
+            // Try as base64url invitation (legacy)
+            if (!tgHash) {
                 try {
                     const invite = r2.decode_invite(codeInput);
                     tgHash = invite.trust_group_hash;
                     joinCodeHex = invite.join_code_hex;
-                } catch {
-                    showError('Invalid invitation code.'); return;
-                }
+                } catch {}
+            }
+            if (!tgHash) {
+                showError('Could not recognise invitation. Try the QR code, full link, or three words.');
+                return;
             }
         }
 
@@ -1434,12 +1446,6 @@ function generateQrSvg(text, size) {
         const relayWarning = checkRelayUrl(relayUrl);
         if (relayWarning) { showError(relayWarning); return; }
 
-        // If we have tgHash, we can connect. If not (short code only), we need it from relay URL field.
-        // For short code, we need the trust group hash — but we don't have it!
-        // The short code only works when the relay URL field contains a hash hint,
-        if (!tgHash) {
-            showError('Could not parse invitation. Use the QR code, paste the full link, or type the xxxx-xxxx-xxxx-xxxx code.'); return;
-        }
 
         try {
             pendingInviteData = { trust_group_hash: tgHash, join_code_hex: joinCodeHex, tg_public_key: null };
@@ -1546,7 +1552,12 @@ function generateQrSvg(text, size) {
         // Short code (tg hash prefix + join code prefix)
         const tgHash = member.trust_group_hash();
         currentShortCode = formatJoinCodeShort(tgHash, codeHex);
-        document.getElementById('settings-short-code').textContent = currentShortCode;
+        // Word code (3 words - for speaking/typing)
+        let currentWordCode = '';
+        try {
+            currentWordCode = r2.encode_word_code(tgHash, codeHex);
+        } catch (e) { console.warn('Word code generation failed:', e); }
+        document.getElementById('settings-word-code').textContent = currentWordCode || currentShortCode;
 
         // Full URL for QR / copy
         const relayUrl = localStorage.getItem(SK_RELAY_URL) || '';
@@ -1575,9 +1586,9 @@ function generateQrSvg(text, size) {
         }, 1000);
         saveAuth();
     };
-    window.copyShortCode = function() {
-        navigator.clipboard.writeText(currentShortCode).then(() => {
-            const el = document.getElementById('settings-short-code');
+    window.copyWordCode = function() {
+        const el = document.getElementById('settings-word-code');
+        navigator.clipboard.writeText(el.textContent).then(() => {
             const orig = el.textContent;
             el.textContent = 'Copied!';
             setTimeout(() => el.textContent = orig, 1000);

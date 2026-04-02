@@ -9,6 +9,7 @@ export const compute_trust_group_hash: (a: number, b: number) => [number, number
 export const decode_compact_frame: (a: number, b: number) => [number, number, number];
 export const decode_extended_frame: (a: number, b: number) => [number, number, number];
 export const decode_invite: (a: number, b: number) => [number, number, number];
+export const decode_word_code: (a: number, b: number) => [number, number, number];
 export const decrypt_with_dek: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const derive_group_keys: (a: number, b: number, c: number, d: number) => [number, number, number];
 export const encode_compact_frame: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
@@ -16,6 +17,7 @@ export const encode_extended_frame: (a: number, b: number, c: number, d: number,
 export const encode_invite: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const encode_note_id_payload: (a: number, b: number, c: bigint) => [number, number, number, number];
 export const encode_note_payload: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint) => [number, number, number, number];
+export const encode_word_code: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const encrypt_with_dek: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const fnv1a_32: (a: number, b: number) => number;
 export const frame_with_be_prefix: (a: number, b: number) => [number, number];

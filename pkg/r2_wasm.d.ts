@@ -207,6 +207,14 @@ export function decode_extended_frame(data: Uint8Array): any;
 export function decode_invite(invite: string): any;
 
 /**
+ * Decode 3 words back to trust group prefix (3 hex chars) + join code fragment.
+ *
+ * Input: "word1-word2-word3" or "word1 word2 word3"
+ * Returns JS object: { tg_prefix_hex: "abc", join_secret_hex: "123456" }
+ */
+export function decode_word_code(words: string): any;
+
+/**
  * Decrypt data with the trust group DEK (XChaCha20-Poly1305).
  *
  * Input: [nonce: 24 bytes] [ciphertext + auth tag] (as produced by encrypt_with_dek).
@@ -267,6 +275,15 @@ export function encode_note_id_payload(id: string, timestamp: bigint): Uint8Arra
  * Used by JavaScript to build payloads for hive.send_event().
  */
 export function encode_note_payload(id: string, title: string, content: string, timestamp: bigint): Uint8Array;
+
+/**
+ * Encode a trust group hash + join code as 3 words.
+ *
+ * `tg_hash_hex`: 16-char hex trust group hash
+ * `join_code_hex`: 32-char hex join code
+ * Returns: "word1-word2-word3"
+ */
+export function encode_word_code(tg_hash_hex: string, join_code_hex: string): string;
 
 /**
  * Encrypt data with the trust group DEK (XChaCha20-Poly1305).
@@ -359,6 +376,7 @@ export interface InitOutput {
     readonly decode_compact_frame: (a: number, b: number) => [number, number, number];
     readonly decode_extended_frame: (a: number, b: number) => [number, number, number];
     readonly decode_invite: (a: number, b: number) => [number, number, number];
+    readonly decode_word_code: (a: number, b: number) => [number, number, number];
     readonly decrypt_with_dek: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly derive_group_keys: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly encode_compact_frame: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
@@ -366,6 +384,7 @@ export interface InitOutput {
     readonly encode_invite: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly encode_note_id_payload: (a: number, b: number, c: bigint) => [number, number, number, number];
     readonly encode_note_payload: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint) => [number, number, number, number];
+    readonly encode_word_code: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly encrypt_with_dek: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly fnv1a_32: (a: number, b: number) => number;
     readonly frame_with_be_prefix: (a: number, b: number) => [number, number];
