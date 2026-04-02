@@ -30,7 +30,7 @@ The relay connects your devices to each other. Without a relay, Notekeeper works
 
 ### Step 2: Open Notekeeper
 
-Open the Notekeeper page in your browser. You'll see a screen asking you to create or join a trust group.
+Open [Notekeeper](https://reality2-ai.github.io/r2-notekeeper/) in your browser. You'll see a screen asking you to create or join a trust group.
 
 ### Step 3: Create or join a trust group
 
