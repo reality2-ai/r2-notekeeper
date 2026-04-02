@@ -1,0 +1,369 @@
+/* tslint:disable */
+/* eslint-disable */
+
+/**
+ * Opaque handle to a MemberState (device/joiner side).
+ */
+export class R2Member {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Restore member state from previously serialized bytes.
+     *
+     * Use this on page load to restore trust group membership from localStorage.
+     */
+    static from_bytes(bytes: Uint8Array): R2Member;
+    /**
+     * Check if the membership certificate is valid at the given time.
+     */
+    is_valid(now: bigint): boolean;
+    /**
+     * Sign a relay HELLO message and return the complete JSON string.
+     *
+     * Produces: `{"type":"hello","version":1,"trust_group":"...","device_id":"...","timestamp":N,"signature":"..."}`
+     *
+     * The signature is Ed25519 over `"{trust_group}:{device_id}:{timestamp}"`.
+     */
+    sign_relay_hello(timestamp: bigint): string;
+    /**
+     * Serialize member state to bytes for persistent storage.
+     *
+     * Returns 277 bytes containing device key, certificate, DEK, HK.
+     * **These bytes contain secret key material — encrypt before storing.**
+     */
+    to_bytes(): Uint8Array;
+    /**
+     * Trust group hash for relay HELLO (first 8 bytes of SHA-256 of TG_PK, as 16 hex chars).
+     */
+    trust_group_hash(): string;
+    /**
+     * DEK for encryption (32 bytes).
+     */
+    readonly dek: Uint8Array;
+    /**
+     * HK for HMAC operations (32 bytes).
+     */
+    readonly hk: Uint8Array;
+    /**
+     * Device's public key (32 bytes).
+     */
+    readonly public_key: Uint8Array;
+    /**
+     * Trust group public key (32 bytes).
+     */
+    readonly trust_group_id: Uint8Array;
+}
+
+/**
+ * Opaque handle to a TrustGroup (key holder side).
+ * Stored in WASM memory; JS holds the index.
+ */
+export class R2TrustGroup {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Restore key holder state from previously serialized bytes.
+     *
+     * Restores the signing key and derived keys. Member list starts empty —
+     * members rejoin via the normal join protocol or are restored separately.
+     */
+    static from_bytes(bytes: Uint8Array, now: bigint): R2TrustGroup;
+    /**
+     * Generate a join code. Returns the 16-byte code as hex string.
+     *
+     * `now` is current Unix timestamp, `ttl_secs` is validity duration.
+     */
+    generate_join_code(now: bigint, ttl_secs: bigint): string;
+    /**
+     * List member names as a JSON array.
+     */
+    member_names(): any;
+    /**
+     * Create a new trust group. Returns the key holder's trust group handle.
+     *
+     * `now` is the current Unix timestamp in seconds.
+     */
+    constructor(now: bigint);
+    /**
+     * Process a join request from a device.
+     *
+     * - `join_code_hex`: the 16-byte join code as hex string
+     * - `device_public_key`: the joiner's Ed25519 public key (32 bytes)
+     * - `device_name`: human-readable name for the device
+     * - `now`: current Unix timestamp
+     *
+     * Returns the encrypted join response as bytes (to send to the joiner).
+     */
+    process_join(join_code_hex: string, device_public_key: Uint8Array, device_name: string, now: bigint): Uint8Array;
+    /**
+     * Serialize key holder state to bytes for persistent storage.
+     *
+     * Returns 38 bytes (signing key + sequence + crypto level).
+     * **Contains TG_SK — the root secret. Encrypt before storing.**
+     */
+    to_bytes(): Uint8Array;
+    /**
+     * DEK (data encryption key), 32 bytes.
+     */
+    readonly dek: Uint8Array;
+    /**
+     * HK (HMAC key), 32 bytes.
+     */
+    readonly hk: Uint8Array;
+    /**
+     * Number of members (excluding key holder).
+     */
+    readonly member_count: number;
+    /**
+     * Trust group public key (32 bytes). This is the trust group ID.
+     */
+    readonly public_key: Uint8Array;
+}
+
+/**
+ * Encode a simple CBOR map: { key0: val0, key1: val1, ... }
+ *
+ * Takes parallel arrays of integer keys and integer values.
+ * Returns CBOR-encoded bytes (compact mode).
+ */
+export function cbor_encode_int_map(keys: Uint8Array, values: Uint32Array): Uint8Array;
+
+/**
+ * Complete the join handshake (device side).
+ *
+ * - `device_secret_key`: the device's Ed25519 secret key (32 bytes)
+ * - `trust_group_public_key`: the trust group's public key (32 bytes)
+ * - `encrypted_response`: the encrypted join response bytes from the key holder
+ * - `now`: current Unix timestamp
+ *
+ * Returns an R2Member handle on success.
+ */
+export function complete_join(device_secret_key: Uint8Array, trust_group_public_key: Uint8Array, encrypted_response: Uint8Array, now: bigint): R2Member;
+
+/**
+ * Compute trust group hash from a public key (first 8 bytes of SHA-256, as 16 hex chars).
+ */
+export function compute_trust_group_hash(tg_public_key: Uint8Array): string;
+
+/**
+ * Decode a compact R2-WIRE frame.
+ *
+ * Returns a JS object with header fields and payload.
+ */
+export function decode_compact_frame(data: Uint8Array): any;
+
+/**
+ * Decode an extended R2-WIRE frame.
+ */
+export function decode_extended_frame(data: Uint8Array): any;
+
+/**
+ * Decode an invite string → { tg_public_key: [32], join_code_hex: string, trust_group_hash: string }
+ */
+export function decode_invite(invite: string): any;
+
+/**
+ * Decrypt data with the trust group DEK (XChaCha20-Poly1305).
+ *
+ * Input: [nonce: 24 bytes] [ciphertext + auth tag] (as produced by encrypt_with_dek).
+ * Returns the plaintext, or throws if decryption/authentication fails.
+ */
+export function decrypt_with_dek(dek: Uint8Array, encrypted: Uint8Array): Uint8Array;
+
+/**
+ * Derive trust group keys (DEK + HK) from raw secret and public key bytes.
+ *
+ * Both `tg_secret` and `tg_public` must be 32 bytes (Ed25519 key material).
+ * Returns a JS object with `dek` and `hk` as byte arrays.
+ */
+export function derive_group_keys(tg_secret: Uint8Array, tg_public: Uint8Array): any;
+
+/**
+ * Encode a compact R2-WIRE frame.
+ *
+ * Parameters:
+ * - `msg_type`: 0=Event, 2=Reply, 3=Ack, 4=Nack, 5=Heartbeat
+ * - `ttl`: time-to-live (0-15)
+ * - `k`: relay budget (0-15)
+ * - `msg_id`: 16-bit message ID
+ * - `event_hash`: 32-bit FNV-1a hash of event name
+ * - `target`: 32-bit target hive address (0 = broadcast)
+ * - `payload`: CBOR-encoded payload bytes
+ *
+ * Returns the encoded frame bytes.
+ */
+export function encode_compact_frame(msg_type: number, ttl: number, k: number, msg_id: number, event_hash: number, target: number, payload: Uint8Array): Uint8Array;
+
+/**
+ * Encode an extended R2-WIRE frame.
+ */
+export function encode_extended_frame(msg_type: number, ttl: number, k: number, msg_id: number, event_hash: number, target_group: number, target_hive: number, payload: Uint8Array): Uint8Array;
+
+/**
+ * Encode an invite: TG_PK (32 bytes) + join_code (16 bytes) → base64url string.
+ *
+ * The invite contains everything a joiner needs to connect and join:
+ * the trust group public key (to compute hash and decrypt response)
+ * and the join code secret.
+ */
+export function encode_invite(tg_public_key: Uint8Array, join_code_hex: string): string;
+
+/**
+ * Encrypt data with the trust group DEK (XChaCha20-Poly1305).
+ *
+ * Returns: [nonce: 24 bytes] [ciphertext + auth tag]
+ * Used for plugin-to-plugin data exchange (note content, files, etc.)
+ * The relay sees only ciphertext.
+ */
+export function encrypt_with_dek(dek: Uint8Array, plaintext: Uint8Array): Uint8Array;
+
+/**
+ * Raw FNV-1a 32-bit hash of pre-canonicalised bytes.
+ */
+export function fnv1a_32(data: Uint8Array): number;
+
+/**
+ * Wrap a frame with a 4-byte big-endian length prefix (TCP framing).
+ */
+export function frame_with_be_prefix(frame: Uint8Array): Uint8Array;
+
+/**
+ * Wrap a frame with a 2-byte little-endian length prefix (BLE/USB framing).
+ */
+export function frame_with_le_prefix(frame: Uint8Array): Uint8Array;
+
+/**
+ * Generate a new Ed25519 device keypair.
+ *
+ * Returns a JS object with `secret_key` (32 bytes) and `public_key` (32 bytes).
+ */
+export function generate_device_keypair(): any;
+
+/**
+ * Compute an HMAC tag for a compact frame.
+ *
+ * `hk` must be 32 bytes. Returns the 8-byte truncated HMAC tag.
+ * The caller is responsible for appending the tag to the frame and setting
+ * the has_hmac flag.
+ */
+export function hmac_compact_tag(frame_bytes: Uint8Array, hk: Uint8Array): Uint8Array;
+
+/**
+ * Hash an event name to a 32-bit FNV-1a identifier.
+ *
+ * Canonicalises the input (lowercase, whitespace-stripped) before hashing.
+ * Returns the hash, or throws on empty/reserved names.
+ */
+export function r2_hash(event_name: string): number;
+
+/**
+ * Returns the r2-wasm version string.
+ */
+export function r2_version(): string;
+
+/**
+ * Sign a message with an Ed25519 secret key.
+ *
+ * Used for relay HELLO signing when joining (before we have a full R2Member).
+ * `secret_key` must be 32 bytes. Returns 64-byte Ed25519 signature.
+ */
+export function sign_ed25519(secret_key: Uint8Array, message: Uint8Array): Uint8Array;
+
+/**
+ * Transcode an extended frame to compact format.
+ */
+export function transcode_to_compact(extended_bytes: Uint8Array): Uint8Array;
+
+/**
+ * Transcode a compact frame to extended format.
+ */
+export function transcode_to_extended(compact_bytes: Uint8Array): Uint8Array;
+
+/**
+ * Verify a compact frame's HMAC tag.
+ *
+ * The frame must include the HMAC tag (has_hmac flag set).
+ * `hk` must be 32 bytes. Returns true if valid.
+ */
+export function verify_compact_hmac(signed_frame: Uint8Array, hk: Uint8Array): boolean;
+
+export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
+
+export interface InitOutput {
+    readonly memory: WebAssembly.Memory;
+    readonly __wbg_r2member_free: (a: number, b: number) => void;
+    readonly __wbg_r2trustgroup_free: (a: number, b: number) => void;
+    readonly cbor_encode_int_map: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly complete_join: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint) => [number, number, number];
+    readonly compute_trust_group_hash: (a: number, b: number) => [number, number, number, number];
+    readonly decode_compact_frame: (a: number, b: number) => [number, number, number];
+    readonly decode_extended_frame: (a: number, b: number) => [number, number, number];
+    readonly decode_invite: (a: number, b: number) => [number, number, number];
+    readonly decrypt_with_dek: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly derive_group_keys: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly encode_compact_frame: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+    readonly encode_extended_frame: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
+    readonly encode_invite: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly encrypt_with_dek: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly fnv1a_32: (a: number, b: number) => number;
+    readonly frame_with_be_prefix: (a: number, b: number) => [number, number];
+    readonly frame_with_le_prefix: (a: number, b: number) => [number, number];
+    readonly generate_device_keypair: () => [number, number, number];
+    readonly hmac_compact_tag: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly r2_hash: (a: number, b: number) => [number, number, number];
+    readonly r2_version: () => [number, number];
+    readonly r2member_dek: (a: number) => [number, number];
+    readonly r2member_from_bytes: (a: number, b: number) => [number, number, number];
+    readonly r2member_hk: (a: number) => [number, number];
+    readonly r2member_is_valid: (a: number, b: bigint) => number;
+    readonly r2member_public_key: (a: number) => [number, number];
+    readonly r2member_sign_relay_hello: (a: number, b: bigint) => [number, number, number, number];
+    readonly r2member_to_bytes: (a: number) => [number, number];
+    readonly r2member_trust_group_hash: (a: number) => [number, number];
+    readonly r2member_trust_group_id: (a: number) => [number, number];
+    readonly r2trustgroup_dek: (a: number) => [number, number];
+    readonly r2trustgroup_from_bytes: (a: number, b: number, c: bigint) => [number, number, number];
+    readonly r2trustgroup_generate_join_code: (a: number, b: bigint, c: bigint) => [number, number];
+    readonly r2trustgroup_hk: (a: number) => [number, number];
+    readonly r2trustgroup_member_count: (a: number) => number;
+    readonly r2trustgroup_member_names: (a: number) => any;
+    readonly r2trustgroup_new: (a: bigint) => [number, number, number];
+    readonly r2trustgroup_process_join: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: bigint) => [number, number, number, number];
+    readonly r2trustgroup_public_key: (a: number) => [number, number];
+    readonly r2trustgroup_to_bytes: (a: number) => [number, number];
+    readonly sign_ed25519: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly transcode_to_compact: (a: number, b: number) => [number, number, number, number];
+    readonly transcode_to_extended: (a: number, b: number) => [number, number, number, number];
+    readonly verify_compact_hmac: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly __wbindgen_malloc: (a: number, b: number) => number;
+    readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+    readonly __wbindgen_exn_store: (a: number) => void;
+    readonly __externref_table_alloc: () => number;
+    readonly __wbindgen_externrefs: WebAssembly.Table;
+    readonly __externref_table_dealloc: (a: number) => void;
+    readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+    readonly __wbindgen_start: () => void;
+}
+
+export type SyncInitInput = BufferSource | WebAssembly.Module;
+
+/**
+ * Instantiates the given `module`, which can either be bytes or
+ * a precompiled `WebAssembly.Module`.
+ *
+ * @param {{ module: SyncInitInput }} module - Passing `SyncInitInput` directly is deprecated.
+ *
+ * @returns {InitOutput}
+ */
+export function initSync(module: { module: SyncInitInput } | SyncInitInput): InitOutput;
+
+/**
+ * If `module_or_path` is {RequestInfo} or {URL}, makes a request and
+ * for everything else, calls `WebAssembly.instantiate` directly.
+ *
+ * @param {{ module_or_path: InitInput | Promise<InitInput> }} module_or_path - Passing `InitInput` directly is deprecated.
+ *
+ * @returns {Promise<InitOutput>}
+ */
+export default function __wbg_init (module_or_path?: { module_or_path: InitInput | Promise<InitInput> } | InitInput | Promise<InitInput>): Promise<InitOutput>;
