@@ -1,0 +1,199 @@
+# Notekeeper Sentant Definition
+# R2-DEF v0.5 conformant
+#
+# This is the source of truth for the Notekeeper capability.
+# The compiled Rust/WASM sentant is generated from this definition.
+# Any R2 runtime (Elixir, compiled Rust, WASM) should produce
+# identical behaviour given the same event sequence.
+
+sentant:
+  name: "Notekeeper"
+  class: "ai.reality2.capability.notekeeper"
+  description: "Private notes with encrypted mesh sync across trust group devices"
+  storage: durable-state
+
+  data:
+    notes: {}
+    event_sequence: 0
+
+  plugins:
+    - name: notekeeper-sync
+
+  automations:
+    - name: notes
+      description: "Note lifecycle - create, update, delete, sync"
+      transitions:
+
+        # ---- Create a new note ----
+        - event: note.create
+          public: true
+          parameters:
+            id: "string"
+            title: "string"
+            content: "string"
+            timestamp: "number"
+          actions:
+            - command: set
+              parameters:
+                key: "notes.{{params.id}}"
+                value:
+                  id: "{{params.id}}"
+                  title: "{{params.title}}"
+                  content: "{{params.content}}"
+                  created_at: "{{params.timestamp}}"
+                  updated_at: "{{params.timestamp}}"
+                  deleted: false
+            - command: set
+              parameters:
+                key: event_sequence
+                value: "{{vars.event_sequence + 1}}"
+            - plugin: notekeeper-sync
+              command: broadcast_event
+              parameters:
+                op: 0
+                note_id: "{{params.id}}"
+                title: "{{params.title}}"
+                content: "{{params.content}}"
+                timestamp: "{{params.timestamp}}"
+            - command: send
+              parameters:
+                event: note.changed
+                id: "{{params.id}}"
+
+        # ---- Update an existing note ----
+        - event: note.update
+          public: true
+          parameters:
+            id: "string"
+            title: "string"
+            content: "string"
+            timestamp: "number"
+          actions:
+            - command: test
+              parameters:
+                condition: "{{vars.notes[params.id]}} != null and {{vars.notes[params.id].deleted}} == false"
+                true:
+                  - command: set
+                    parameters:
+                      key: "notes.{{params.id}}.title"
+                      value: "{{params.title}}"
+                  - command: set
+                    parameters:
+                      key: "notes.{{params.id}}.content"
+                      value: "{{params.content}}"
+                  - command: set
+                    parameters:
+                      key: "notes.{{params.id}}.updated_at"
+                      value: "{{params.timestamp}}"
+                  - command: set
+                    parameters:
+                      key: event_sequence
+                      value: "{{vars.event_sequence + 1}}"
+                  - plugin: notekeeper-sync
+                    command: broadcast_event
+                    parameters:
+                      op: 1
+                      note_id: "{{params.id}}"
+                      title: "{{params.title}}"
+                      content: "{{params.content}}"
+                      timestamp: "{{params.timestamp}}"
+                  - command: send
+                    parameters:
+                      event: note.changed
+                      id: "{{params.id}}"
+
+        # ---- Delete a note (soft delete / tombstone) ----
+        - event: note.delete
+          public: true
+          parameters:
+            id: "string"
+            timestamp: "number"
+          actions:
+            - command: test
+              parameters:
+                condition: "{{vars.notes[params.id]}} != null"
+                true:
+                  - command: set
+                    parameters:
+                      key: "notes.{{params.id}}.deleted"
+                      value: true
+                  - command: set
+                    parameters:
+                      key: "notes.{{params.id}}.updated_at"
+                      value: "{{params.timestamp}}"
+                  - command: set
+                    parameters:
+                      key: event_sequence
+                      value: "{{vars.event_sequence + 1}}"
+                  - plugin: notekeeper-sync
+                    command: broadcast_event
+                    parameters:
+                      op: 2
+                      note_id: "{{params.id}}"
+                      timestamp: "{{params.timestamp}}"
+                  - command: send
+                    parameters:
+                      event: note.changed
+                      id: "{{params.id}}"
+
+        # ---- List notes (query) ----
+        - event: note.list
+          public: true
+          actions:
+            - command: send
+              parameters:
+                event: note.list.result
+                notes: "{{vars.notes}}"
+
+        # ---- Get a single note ----
+        - event: note.get
+          public: true
+          parameters:
+            id: "string"
+          actions:
+            - command: send
+              parameters:
+                event: note.get.result
+                note: "{{vars.notes[params.id]}}"
+
+        # ---- Incoming sync from another device (plugin result) ----
+        - event: notekeeper-sync
+          actions:
+            - command: test
+              parameters:
+                condition: "{{params.status}} == 'ok' and {{params.command}} == 'incoming'"
+                true:
+                  # LWW merge - only apply if incoming timestamp >= local
+                  - command: test
+                    parameters:
+                      condition: "{{vars.notes[params.data.note_id]}} == null or {{params.data.timestamp}} >= {{vars.notes[params.data.note_id].updated_at}}"
+                      true:
+                        - command: test
+                          parameters:
+                            condition: "{{params.data.op}} == 2"
+                            true:
+                              # Delete
+                              - command: set
+                                parameters:
+                                  key: "notes.{{params.data.note_id}}.deleted"
+                                  value: true
+                              - command: set
+                                parameters:
+                                  key: "notes.{{params.data.note_id}}.updated_at"
+                                  value: "{{params.data.timestamp}}"
+                            false:
+                              # Create or update
+                              - command: set
+                                parameters:
+                                  key: "notes.{{params.data.note_id}}"
+                                  value:
+                                    id: "{{params.data.note_id}}"
+                                    title: "{{params.data.title}}"
+                                    content: "{{params.data.content}}"
+                                    created_at: "{{params.data.timestamp}}"
+                                    updated_at: "{{params.data.timestamp}}"
+                                    deleted: false
+                        - command: send
+                          parameters:
+                            event: note.changed
+                            id: "{{params.data.note_id}}"

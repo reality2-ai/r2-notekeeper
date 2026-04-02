@@ -1,0 +1,79 @@
+# Notekeeper Sync Plugin Definition
+# R2-PLUGIN conformant
+#
+# This plugin handles encrypted sync of note content between devices
+# in the same trust group, via a relay.
+#
+# The plugin is WASM-native - compiled into the WASM binary alongside
+# the sentant. It is NOT an external process.
+
+plugin:
+  name: "notekeeper-sync"
+  description: "Encrypted note sync across trust group devices via relay"
+  capabilities:
+    - "ai.reality2.capability.notekeeper.sync"
+  type: "in-process"
+  platform:
+    - wasm
+    - linux-embedded
+
+  commands:
+
+    # ---- Broadcast a note event to other devices ----
+    broadcast_event:
+      description: "Encode R2-WIRE event frame, encrypt note content with DEK, send through relay"
+      parameters:
+        op: "number"          # 0=create, 1=update, 2=delete
+        note_id: "string"     # 8-char hex note ID
+        timestamp: "number"   # Unix seconds
+        title: "string"       # Note title (for create/update)
+        content: "string"     # Note content (for create/update)
+      result:
+        status: "ok"
+        data:
+          note_id: "string"
+          op: "number"
+      error_cases:
+        - "relay_disconnected"
+        - "encryption_failed"
+
+    # ---- Incoming sync from relay (plugin-initiated event) ----
+    # This is not invoked by the sentant - the plugin emits this
+    # event when it receives encrypted content from another device
+    # via the relay.
+    incoming:
+      description: "Received and decrypted note content from another device"
+      result:
+        status: "ok"
+        data:
+          op: "number"        # 0=create, 1=update, 2=delete
+          note_id: "string"
+          title: "string"
+          content: "string"
+          timestamp: "number"
+      error_cases:
+        - "decryption_failed"
+        - "malformed_payload"
+
+  # ---- Wire protocol ----
+  # On the WebSocket, plugin data uses 0xFE prefix byte to distinguish
+  # from R2-WIRE frames (0x00) and join protocol (0xFF).
+  # This is transport framing, not the plugin interface.
+  #
+  # The sentant-plugin interface ALWAYS uses the standard R2-PLUGIN
+  # envelope format, regardless of transport.
+  #
+  # Wire format:
+  #   [0xFE] [encrypted_payload]
+  #   encrypted_payload = XChaCha20-Poly1305(JSON, DEK)
+  #   JSON = {note_id, title, content, op, timestamp}
+
+  # ---- Lifecycle ----
+  # plugin.started: emitted when relay connection is established
+  # plugin.stopped: emitted when relay disconnects cleanly
+  # plugin.failed:  emitted on encryption/decryption failure
+
+  # ---- Health ----
+  # Responds to _r2:health with:
+  #   _r2:health_ok     - relay connected, DEK available
+  #   _r2:health_fail   - relay disconnected or DEK missing
