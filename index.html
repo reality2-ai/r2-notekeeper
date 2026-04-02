@@ -600,6 +600,11 @@ function generateQrSvg(text, size) {
     let notes = {};
     let events = [];
     let tgShort = '';
+    let hive = null; // R2Hive - sentant engine
+
+    // Event hashes for the sentant (FNV-1a, must match notekeeper.rs)
+    let HIVE_NOTE_CREATE, HIVE_NOTE_UPDATE, HIVE_NOTE_DELETE, HIVE_NOTE_LIST;
+    let HIVE_NOTE_CHANGED, HIVE_NOTE_LIST_RESULT;
 
     let HASH_CREATE, HASH_UPDATE, HASH_DELETE;
 
@@ -1127,12 +1132,89 @@ function generateQrSvg(text, size) {
         markDirty();
     };
 
+    // ── Hive Event Processing ──
+    function processHiveOutbound() {
+        if (!hive) return;
+        const json = hive.drain_outbound();
+        if (json === '[]') return;
+        try {
+            const events = JSON.parse(json);
+            for (const evt of events) {
+                if (evt.hash === HIVE_NOTE_CHANGED) {
+                    // Decode CBOR payload: {0:id, 1:title, 2:content, 3:updated_at, 4:deleted}
+                    const payload = hexToBytes(evt.payload);
+                    const note = decodeNoteCbor(payload);
+                    if (note) {
+                        notes[note.id] = note;
+                        saveNotes();
+                    }
+                }
+                // Plugin calls from the sentant would also appear here
+                // We can use them to trigger the relay sync
+            }
+        } catch (e) {
+            console.warn('Hive outbound parse error:', e);
+        }
+    }
+
+    function hexToBytes(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+        return bytes;
+    }
+
+    function decodeNoteCbor(payload) {
+        // Simple CBOR decode: {0:text, 1:text, 2:text, 3:uint, 4:bool}
+        try {
+            let pos = 0;
+            const mapLen = payload[pos++] & 0x1f;
+            const note = { id: '', title: '', content: '', created_at: 0, updated_at: 0, deleted: false };
+            for (let i = 0; i < mapLen; i++) {
+                const key = payload[pos] < 24 ? payload[pos++] : payload[pos + 1]; // simple uint key
+                if (payload[pos - 1] >= 24) pos += 2;
+                // Decode value based on key
+                const major = (payload[pos] >> 5) & 7;
+                if (major === 3) { // text string
+                    const len = payload[pos++] & 0x1f;
+                    const text = new TextDecoder().decode(payload.slice(pos, pos + len));
+                    pos += len;
+                    if (key === 0) note.id = text;
+                    else if (key === 1) note.title = text;
+                    else if (key === 2) note.content = text;
+                } else if (major === 0) { // uint
+                    let val = 0;
+                    const info = payload[pos++] & 0x1f;
+                    if (info < 24) val = info;
+                    else if (info === 24) val = payload[pos++];
+                    else if (info === 25) { val = (payload[pos] << 8) | payload[pos + 1]; pos += 2; }
+                    else if (info === 26) { val = (payload[pos] << 24) | (payload[pos + 1] << 16) | (payload[pos + 2] << 8) | payload[pos + 3]; pos += 4; }
+                    if (key === 3) { note.updated_at = val >>> 0; note.created_at = val >>> 0; }
+                } else if (major === 7) { // simple: bool
+                    const info = payload[pos++] & 0x1f;
+                    if (key === 4) note.deleted = (info === 21); // 0xf5 = true
+                }
+            }
+            return note.id ? note : null;
+        } catch { return null; }
+    }
+
     // ── Note Operations ──
     window.newNote = function() {
         flushIfDirty();
         const id = randomId();
         const ts = nowNum();
-        notes[id] = { id, title: '', content: '', created_at: ts, updated_at: ts, deleted: false };
+
+        // Send to sentant via hive
+        if (hive) {
+            const payload = r2.encode_note_payload(id, '', '', BigInt(ts));
+            hive.send_event(HIVE_NOTE_CREATE, payload);
+            processHiveOutbound();
+        }
+
+        // Also update local state (until hive fully drives UI)
+        if (!notes[id]) {
+            notes[id] = { id, title: '', content: '', created_at: ts, updated_at: ts, deleted: false };
+        }
         currentNoteId = id;
         saveNotes(); renderNoteList(); renderEditor();
         setEditorMode('visual');
@@ -1145,7 +1227,17 @@ function generateQrSvg(text, size) {
         const title = document.getElementById('editor-title').value.trim();
         const content = getCurrentMarkdown();
         const isNew = !n.title && !n.content;
-        n.title = title || 'Untitled'; n.content = content; n.updated_at = nowNum();
+        const ts = nowNum();
+
+        // Send to sentant via hive
+        if (hive) {
+            const payload = r2.encode_note_payload(n.id, title || 'Untitled', content, BigInt(ts));
+            hive.send_event(isNew ? HIVE_NOTE_CREATE : HIVE_NOTE_UPDATE, payload);
+            processHiveOutbound();
+        }
+
+        // Update local state
+        n.title = title || 'Untitled'; n.content = content; n.updated_at = ts;
         saveNotes(); updateSyncIndicator('syncing');
         emitNoteEvent(isNew ? 0 : 1, n.id);
         isDirty = false;
@@ -1157,6 +1249,14 @@ function generateQrSvg(text, size) {
     window.deleteCurrentNote = function() {
         if (!currentNoteId || !notes[currentNoteId]) return;
         if (!confirm('Delete this note?')) return;
+
+        // Send to sentant via hive
+        if (hive) {
+            const payload = r2.encode_note_id_payload(currentNoteId, BigInt(nowNum()));
+            hive.send_event(HIVE_NOTE_DELETE, payload);
+            processHiveOutbound();
+        }
+
         notes[currentNoteId].deleted = true; notes[currentNoteId].updated_at = nowNum();
         emitNoteEvent(2, currentNoteId); saveNotes();
         currentNoteId = null;
@@ -1712,6 +1812,17 @@ function generateQrSvg(text, size) {
         HASH_CREATE = r2.r2_hash('note.create');
         HASH_UPDATE = r2.r2_hash('note.update');
         HASH_DELETE = r2.r2_hash('note.delete');
+
+        // Hive event hashes (for sentant dispatch)
+        HIVE_NOTE_CREATE = r2.r2_hash('note.create');
+        HIVE_NOTE_UPDATE = r2.r2_hash('note.update');
+        HIVE_NOTE_DELETE = r2.r2_hash('note.delete');
+        HIVE_NOTE_LIST = r2.r2_hash('note.list');
+        HIVE_NOTE_CHANGED = r2.r2_hash('note.changed');
+        HIVE_NOTE_LIST_RESULT = r2.r2_hash('note.list.result');
+
+        // Create the R2 Hive (sentant engine)
+        hive = new r2.R2Hive();
         // Check for #join= in URL before deciding what to show
         const hasJoinHash = window.location.hash.startsWith('#join=');
 

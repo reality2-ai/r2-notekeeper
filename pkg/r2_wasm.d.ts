@@ -2,6 +2,49 @@
 /* eslint-disable */
 
 /**
+ * The R2 Hive running in the browser.
+ *
+ * Contains the EventBus with the Notekeeper sentant and sync plugin.
+ * JavaScript interacts with it by sending events and polling for
+ * outbound actions.
+ */
+export class R2Hive {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Drain all outbound events (events the sentant wants to send externally).
+     *
+     * Returns a JSON array of events: [{"hash":N,"payload":"hex"}, ...]
+     * JavaScript processes these (encrypt + relay, UI update, etc).
+     */
+    drain_outbound(): string;
+    /**
+     * Create a new hive with the Notekeeper sentant and sync plugin.
+     */
+    constructor();
+    /**
+     * Push incoming sync data from another device (already decrypted).
+     *
+     * `payload` is the CBOR-encoded R2-PLUGIN result envelope.
+     */
+    push_sync_inbound(payload: Uint8Array): void;
+    /**
+     * Send an event to the sentant.
+     *
+     * `event_hash` is the FNV-1a hash of the event name.
+     * `payload` is CBOR-encoded event parameters.
+     *
+     * After calling this, check `drain_outbound()` for events the
+     * sentant wants to send (sync, notifications, etc).
+     */
+    send_event(event_hash: number, payload: Uint8Array): void;
+    /**
+     * Process one tick of the engine.
+     */
+    tick(): void;
+}
+
+/**
  * Opaque handle to a MemberState (device/joiner side).
  */
 export class R2Member {
@@ -210,6 +253,22 @@ export function encode_extended_frame(msg_type: number, ttl: number, k: number, 
 export function encode_invite(tg_public_key: Uint8Array, join_code_hex: string): string;
 
 /**
+ * Encode a note ID-only payload as CBOR.
+ *
+ * {0: id, 3: timestamp}
+ * Used for delete events.
+ */
+export function encode_note_id_payload(id: string, timestamp: bigint): Uint8Array;
+
+/**
+ * Encode a note event payload as CBOR.
+ *
+ * {0: id, 1: title, 2: content, 3: timestamp}
+ * Used by JavaScript to build payloads for hive.send_event().
+ */
+export function encode_note_payload(id: string, title: string, content: string, timestamp: bigint): Uint8Array;
+
+/**
  * Encrypt data with the trust group DEK (XChaCha20-Poly1305).
  *
  * Returns: [nonce: 24 bytes] [ciphertext + auth tag]
@@ -305,6 +364,8 @@ export interface InitOutput {
     readonly encode_compact_frame: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly encode_extended_frame: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
     readonly encode_invite: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly encode_note_id_payload: (a: number, b: number, c: bigint) => [number, number, number, number];
+    readonly encode_note_payload: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint) => [number, number, number, number];
     readonly encrypt_with_dek: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly fnv1a_32: (a: number, b: number) => number;
     readonly frame_with_be_prefix: (a: number, b: number) => [number, number];
@@ -336,6 +397,12 @@ export interface InitOutput {
     readonly transcode_to_compact: (a: number, b: number) => [number, number, number, number];
     readonly transcode_to_extended: (a: number, b: number) => [number, number, number, number];
     readonly verify_compact_hmac: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly __wbg_r2hive_free: (a: number, b: number) => void;
+    readonly r2hive_drain_outbound: (a: number) => [number, number];
+    readonly r2hive_new: () => number;
+    readonly r2hive_push_sync_inbound: (a: number, b: number, c: number) => void;
+    readonly r2hive_send_event: (a: number, b: number, c: number, d: number) => void;
+    readonly r2hive_tick: (a: number) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

@@ -1,6 +1,88 @@
 /* @ts-self-types="./r2_wasm.d.ts" */
 
 /**
+ * The R2 Hive running in the browser.
+ *
+ * Contains the EventBus with the Notekeeper sentant and sync plugin.
+ * JavaScript interacts with it by sending events and polling for
+ * outbound actions.
+ */
+export class R2Hive {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        R2HiveFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_r2hive_free(ptr, 0);
+    }
+    /**
+     * Drain all outbound events (events the sentant wants to send externally).
+     *
+     * Returns a JSON array of events: [{"hash":N,"payload":"hex"}, ...]
+     * JavaScript processes these (encrypt + relay, UI update, etc).
+     * @returns {string}
+     */
+    drain_outbound() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.r2hive_drain_outbound(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Create a new hive with the Notekeeper sentant and sync plugin.
+     */
+    constructor() {
+        const ret = wasm.r2hive_new();
+        this.__wbg_ptr = ret >>> 0;
+        R2HiveFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Push incoming sync data from another device (already decrypted).
+     *
+     * `payload` is the CBOR-encoded R2-PLUGIN result envelope.
+     * @param {Uint8Array} payload
+     */
+    push_sync_inbound(payload) {
+        const ptr0 = passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.r2hive_push_sync_inbound(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
+     * Send an event to the sentant.
+     *
+     * `event_hash` is the FNV-1a hash of the event name.
+     * `payload` is CBOR-encoded event parameters.
+     *
+     * After calling this, check `drain_outbound()` for events the
+     * sentant wants to send (sync, notifications, etc).
+     * @param {number} event_hash
+     * @param {Uint8Array} payload
+     */
+    send_event(event_hash, payload) {
+        const ptr0 = passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.r2hive_send_event(this.__wbg_ptr, event_hash, ptr0, len0);
+    }
+    /**
+     * Process one tick of the engine.
+     */
+    tick() {
+        wasm.r2hive_tick(this.__wbg_ptr);
+    }
+}
+if (Symbol.dispose) R2Hive.prototype[Symbol.dispose] = R2Hive.prototype.free;
+
+/**
  * Opaque handle to a MemberState (device/joiner side).
  */
 export class R2Member {
@@ -573,6 +655,54 @@ export function encode_invite(tg_public_key, join_code_hex) {
 }
 
 /**
+ * Encode a note ID-only payload as CBOR.
+ *
+ * {0: id, 3: timestamp}
+ * Used for delete events.
+ * @param {string} id
+ * @param {bigint} timestamp
+ * @returns {Uint8Array}
+ */
+export function encode_note_id_payload(id, timestamp) {
+    const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.encode_note_id_payload(ptr0, len0, timestamp);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v2;
+}
+
+/**
+ * Encode a note event payload as CBOR.
+ *
+ * {0: id, 1: title, 2: content, 3: timestamp}
+ * Used by JavaScript to build payloads for hive.send_event().
+ * @param {string} id
+ * @param {string} title
+ * @param {string} content
+ * @param {bigint} timestamp
+ * @returns {Uint8Array}
+ */
+export function encode_note_payload(id, title, content, timestamp) {
+    const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(title, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(content, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.encode_note_payload(ptr0, len0, ptr1, len1, ptr2, len2, timestamp);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v4 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v4;
+}
+
+/**
  * Encrypt data with the trust group DEK (XChaCha20-Poly1305).
  *
  * Returns: [nonce: 24 bytes] [ciphertext + auth tag]
@@ -931,6 +1061,9 @@ function __wbg_get_imports() {
     };
 }
 
+const R2HiveFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_r2hive_free(ptr >>> 0, 1));
 const R2MemberFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_r2member_free(ptr >>> 0, 1));
