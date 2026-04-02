@@ -354,7 +354,7 @@
         <p class="subtitle">Private notes on your R2 mesh.<br>No server. No cloud. End-to-end encrypted.</p>
         <div class="field">
             <input id="join-code" class="field-input" placeholder="Paste link or type xxxx-xxxx-xxxx-xxxx" style="font-family:var(--mono);font-size:14px;text-align:center;letter-spacing:2px"
-                   oninput="formatShortCode(this)" maxlength="19">
+                   oninput="formatShortCode(this)" maxlength="29">
         </div>
         <div class="field">
             <input id="join-name" class="field-input" placeholder="Device name">
@@ -743,7 +743,7 @@ function generateQrSvg(text, size) {
     window.formatShortCode = function(input) {
         // Only format if it looks like a short code being typed (hex chars, not a URL)
         if (input.value.includes('http') || input.value.includes(',')) return;
-        let v = input.value.replace(/[^a-fA-F0-9]/g, '').substring(0, 16);
+        let v = input.value.replace(/[^a-fA-F0-9]/g, '').substring(0, 24);
         let parts = [];
         for (let i = 0; i < v.length; i += 4) parts.push(v.substring(i, i + 4));
         input.value = parts.join('-');
@@ -751,17 +751,19 @@ function generateQrSvg(text, size) {
 
     // Format short code: xxxx-xxxx-xxxx-xxxx (first 8 hex of TG hash + first 8 hex of join code)
     function formatJoinCodeShort(tgHash, joinCodeHex) {
-        const tg = tgHash.substring(0, 8);
-        const jc = joinCodeHex.substring(0, 8);
-        return tg.substring(0, 4) + '-' + tg.substring(4, 8) + '-' + jc.substring(0, 4) + '-' + jc.substring(4, 8);
+        // Full tg hash (16 hex) + first 8 hex of join code = 24 hex chars
+        const combined = tgHash.substring(0, 16) + joinCodeHex.substring(0, 8);
+        let parts = [];
+        for (let i = 0; i < combined.length; i += 4) parts.push(combined.substring(i, i + 4));
+        return parts.join('-');
     }
 
-    // Parse short code (xxxx-xxxx-xxxx-xxxx) → { tgHash (16 hex), joinCodeHex (32 hex, zero-padded) }
+    // Parse short code (xxxx-xxxx-xxxx-xxxx-xxxx-xxxx) → { tgHash (16 hex), joinCodeHex (32 hex, zero-padded) }
     function parseShortCode(input) {
         const stripped = input.replace(/[^a-fA-F0-9]/g, '').toLowerCase();
-        if (stripped.length >= 16) {
-            const tgHash = stripped.substring(0, 8).padEnd(16, '0'); // expand 8 hex to 16 (pad right)
-            const joinCode = stripped.substring(8, 16).padEnd(32, '0');
+        if (stripped.length >= 24) {
+            const tgHash = stripped.substring(0, 16);
+            const joinCode = stripped.substring(16, 24).padEnd(32, '0');
             return { tgHash, joinCodeHex: joinCode };
         }
         return null;
