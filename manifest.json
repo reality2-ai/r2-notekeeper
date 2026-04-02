@@ -2,7 +2,7 @@
   "name": "R2 Notekeeper",
   "short_name": "Notekeeper",
   "description": "Private notes on the R2 mesh. End-to-end encrypted. No server required.",
-  "start_url": "./notekeeper.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#151518",
   "theme_color": "#d4a853",
