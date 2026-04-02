@@ -241,6 +241,11 @@
         .editor-preview hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
         .editor-preview a { color: var(--accent); text-decoration: none; }
         .editor-preview a:hover { text-decoration: underline; }
+        .editor-preview[contenteditable]:empty::before {
+            content: 'Start writing...';
+            color: var(--text-faint);
+            pointer-events: none;
+        }
 
         /* Sync indicator */
         .sync-status { font-size: 11px; font-family: var(--mono); transition: color 0.3s; }
@@ -424,12 +429,14 @@
                     <button class="fmt-btn" onclick="fmt('hr')" title="Horizontal rule">&mdash;</button>
                     <button class="fmt-btn" onclick="fmt('link')" title="Link">Link</button>
                     <div class="mode-toggle">
-                        <button id="mode-edit" class="active" onclick="setEditorMode('edit')">Edit</button>
-                        <button id="mode-preview" onclick="setEditorMode('preview')">Preview</button>
+                        <button id="mode-visual" class="active" onclick="setEditorMode('visual')">Visual</button>
+                        <button id="mode-markdown" onclick="setEditorMode('markdown')">Markdown</button>
                     </div>
                 </div>
-                <textarea class="editor-content" id="editor-content" placeholder="Start writing... (Markdown supported)"></textarea>
-                <div class="editor-preview" id="editor-preview" style="display:none"></div>
+                <!-- WYSIWYG editor (default) -->
+                <div class="editor-preview" id="editor-visual" contenteditable="true" style="flex:1;padding:8px 32px 32px;outline:none;overflow-y:auto"></div>
+                <!-- Raw markdown editor (toggle) -->
+                <textarea class="editor-content" id="editor-content" placeholder="Raw markdown..." style="display:none"></textarea>
             </div>
         </div>
     </div>
@@ -939,61 +946,130 @@ function generateQrSvg(text, size) {
         return html;
     }
 
+    // ── HTML to Markdown Converter ──
+    function htmlToMarkdown(html) {
+        // Work on a temporary div to use DOM parsing
+        const div = document.createElement('div');
+        div.innerHTML = html;
+
+        function convert(node) {
+            if (node.nodeType === 3) return node.textContent; // text node
+            if (node.nodeType !== 1) return '';
+
+            const tag = node.tagName.toLowerCase();
+            const inner = () => Array.from(node.childNodes).map(convert).join('');
+
+            switch (tag) {
+                case 'h1': return `# ${inner()}\n\n`;
+                case 'h2': return `## ${inner()}\n\n`;
+                case 'h3': return `### ${inner()}\n\n`;
+                case 'strong': case 'b': return `**${inner()}**`;
+                case 'em': case 'i': return `*${inner()}*`;
+                case 'code':
+                    if (node.parentElement && node.parentElement.tagName === 'PRE')
+                        return inner(); // handled by pre
+                    return `\`${inner()}\``;
+                case 'pre': return `\`\`\`\n${node.textContent.trim()}\n\`\`\`\n\n`;
+                case 'blockquote': return inner().trim().split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
+                case 'ul': return Array.from(node.children).map(li => `- ${convert(li).trim()}`).join('\n') + '\n\n';
+                case 'ol': return Array.from(node.children).map((li, i) => `${i+1}. ${convert(li).trim()}`).join('\n') + '\n\n';
+                case 'li': return inner();
+                case 'a': return `[${inner()}](${node.getAttribute('href') || ''})`;
+                case 'hr': return `---\n\n`;
+                case 'br': return '\n';
+                case 'p': case 'div': return `${inner()}\n\n`;
+                default: return inner();
+            }
+        }
+
+        return Array.from(div.childNodes).map(convert).join('')
+            .replace(/\n{3,}/g, '\n\n').trim();
+    }
+
     // ── Editor Mode Toggle ──
-    let editorMode = 'edit';
+    let editorMode = 'visual';
 
     window.setEditorMode = function(mode) {
         editorMode = mode;
+        const visual = document.getElementById('editor-visual');
         const textarea = document.getElementById('editor-content');
-        const preview = document.getElementById('editor-preview');
-        const editBtn = document.getElementById('mode-edit');
-        const previewBtn = document.getElementById('mode-preview');
+        const visualBtn = document.getElementById('mode-visual');
+        const mdBtn = document.getElementById('mode-markdown');
 
-        if (mode === 'preview') {
-            textarea.style.display = 'none';
-            preview.style.display = 'block';
-            preview.innerHTML = renderMarkdown(textarea.value);
-            editBtn.classList.remove('active');
-            previewBtn.classList.add('active');
-        } else {
+        if (mode === 'markdown') {
+            // Sync visual → markdown
+            textarea.value = htmlToMarkdown(visual.innerHTML);
+            visual.style.display = 'none';
             textarea.style.display = 'block';
-            preview.style.display = 'none';
-            editBtn.classList.add('active');
-            previewBtn.classList.remove('active');
+            visualBtn.classList.remove('active');
+            mdBtn.classList.add('active');
             textarea.focus();
+        } else {
+            // Sync markdown → visual
+            visual.innerHTML = renderMarkdown(textarea.value);
+            textarea.style.display = 'none';
+            visual.style.display = 'block';
+            visualBtn.classList.add('active');
+            mdBtn.classList.remove('active');
+            visual.focus();
         }
     };
 
-    // ── Formatting Commands ──
-    window.fmt = function(type) {
-        // Ensure we're in edit mode
-        if (editorMode !== 'edit') setEditorMode('edit');
+    // Get current content as markdown (from whichever mode is active)
+    function getCurrentMarkdown() {
+        if (editorMode === 'markdown') {
+            return document.getElementById('editor-content').value;
+        }
+        return htmlToMarkdown(document.getElementById('editor-visual').innerHTML);
+    }
 
-        const ta = document.getElementById('editor-content');
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const sel = ta.value.substring(start, end);
-        const before = ta.value.substring(0, start);
-        const after = ta.value.substring(end);
-        let insert = '', cursorOffset = 0;
+    // ── Formatting Commands (WYSIWYG) ──
+    window.fmt = function(type) {
+        // Switch to visual mode if in markdown
+        if (editorMode !== 'visual') setEditorMode('visual');
+
+        const visual = document.getElementById('editor-visual');
+        visual.focus();
 
         switch (type) {
-            case 'heading': insert = `# ${sel || 'Heading'}`; cursorOffset = sel ? 0 : -7; break;
-            case 'bold': insert = `**${sel || 'text'}**`; cursorOffset = sel ? 0 : -6; break;
-            case 'italic': insert = `*${sel || 'text'}*`; cursorOffset = sel ? 0 : -5; break;
-            case 'code': insert = `\`${sel || 'code'}\``; cursorOffset = sel ? 0 : -5; break;
-            case 'codeblock': insert = `\`\`\`\n${sel || 'code'}\n\`\`\``; cursorOffset = sel ? 0 : -8; break;
-            case 'ul': insert = `- ${sel || 'item'}`; cursorOffset = sel ? 0 : -4; break;
-            case 'ol': insert = `1. ${sel || 'item'}`; cursorOffset = sel ? 0 : -4; break;
-            case 'quote': insert = `> ${sel || 'quote'}`; cursorOffset = sel ? 0 : -5; break;
-            case 'hr': insert = `\n---\n`; break;
-            case 'link': insert = `[${sel || 'text'}](url)`; cursorOffset = sel ? -1 : -10; break;
+            case 'heading':
+                document.execCommand('formatBlock', false, 'h2');
+                break;
+            case 'bold':
+                document.execCommand('bold');
+                break;
+            case 'italic':
+                document.execCommand('italic');
+                break;
+            case 'code':
+                // Wrap selection in <code>
+                const sel = window.getSelection();
+                if (sel.rangeCount) {
+                    const range = sel.getRangeAt(0);
+                    const code = document.createElement('code');
+                    range.surroundContents(code);
+                }
+                break;
+            case 'codeblock':
+                document.execCommand('formatBlock', false, 'pre');
+                break;
+            case 'ul':
+                document.execCommand('insertUnorderedList');
+                break;
+            case 'ol':
+                document.execCommand('insertOrderedList');
+                break;
+            case 'quote':
+                document.execCommand('formatBlock', false, 'blockquote');
+                break;
+            case 'hr':
+                document.execCommand('insertHorizontalRule');
+                break;
+            case 'link':
+                const url = prompt('URL:');
+                if (url) document.execCommand('createLink', false, url);
+                break;
         }
-
-        ta.value = before + insert + after;
-        const newPos = start + insert.length + cursorOffset;
-        ta.setSelectionRange(newPos, newPos);
-        ta.focus();
         markDirty();
     };
 
@@ -1005,7 +1081,7 @@ function generateQrSvg(text, size) {
         notes[id] = { id, title: '', content: '', created_at: ts, updated_at: ts, deleted: false };
         currentNoteId = id;
         saveNotes(); renderNoteList(); renderEditor();
-        setEditorMode('edit');
+        setEditorMode('visual');
         document.getElementById('editor').classList.add('mobile-visible');
         document.getElementById('editor-title').focus();
     };
@@ -1013,7 +1089,7 @@ function generateQrSvg(text, size) {
         if (!currentNoteId || !notes[currentNoteId]) return;
         const n = notes[currentNoteId];
         const title = document.getElementById('editor-title').value.trim();
-        const content = document.getElementById('editor-content').value;
+        const content = getCurrentMarkdown();
         const isNew = !n.title && !n.content;
         n.title = title || 'Untitled'; n.content = content; n.updated_at = nowNum();
         saveNotes(); updateSyncIndicator('syncing');
@@ -1069,11 +1145,8 @@ function generateQrSvg(text, size) {
         const n = notes[currentNoteId];
         document.getElementById('editor-title').value = n.title;
         document.getElementById('editor-content').value = n.content;
+        document.getElementById('editor-visual').innerHTML = renderMarkdown(n.content);
         document.getElementById('editor-meta').textContent = `${n.id} \u00b7 ${timeAgo(n.updated_at)}`;
-        // Refresh preview if in preview mode
-        if (editorMode === 'preview') {
-            document.getElementById('editor-preview').innerHTML = renderMarkdown(n.content);
-        }
     }
     function renderEventLog() {
         document.getElementById('event-count').textContent = events.length;
@@ -1376,6 +1449,7 @@ function generateQrSvg(text, size) {
     });
     document.getElementById('editor-title').addEventListener('input', markDirty);
     document.getElementById('editor-content').addEventListener('input', markDirty);
+    document.getElementById('editor-visual').addEventListener('input', markDirty);
     window.addEventListener('beforeunload', () => flushIfDirty());
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushIfDirty(); });
 
