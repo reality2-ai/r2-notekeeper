@@ -1335,6 +1335,7 @@ function generateQrSvg(text, size) {
 
     function handleJoinMessage(data) {
         const msgType = data[1];
+        console.log('[R2] handleJoinMessage type:', msgType, 'isKeyHolder:', isKeyHolder, 'hasTG:', !!trustGroup);
         if (msgType === JOIN_REQUEST && isKeyHolder && trustGroup) {
             const devicePk = data.slice(2, 34);
             const joinCode = data.slice(34, 50);
@@ -1748,6 +1749,7 @@ function generateQrSvg(text, size) {
         if (relayUrl && !checkRelayUrl(relayUrl)) {
             relay = new R2RelayTransport(relayUrl, member);
             relay.onFrame = (data) => {
+                console.log('[R2] relay frame:', data[0], 'len:', data.length);
                 if (isJoinMessage(data)) handleJoinMessage(data);
                 else if (isPluginData(data)) handlePluginData(data);
                 else handleIncomingFrame(data);
