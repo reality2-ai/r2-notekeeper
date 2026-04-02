@@ -18,21 +18,23 @@ Notekeeper runs entirely in your web browser. Your notes are encrypted with keys
 1. A web browser (Chrome, Edge, Firefox, or Safari)
 2. A relay running somewhere (see below)
 
-### Step 1: Set up a relay
+### Step 1: Connect to a relay
 
-The relay connects your devices to each other across the internet. You need one running before you can sync notes between devices.
+The relay connects your devices to each other. Without a relay, Notekeeper works fine on a single device — but to sync notes between your laptop and phone (or any two devices), they need a relay to find each other.
 
-**If someone has already set up a relay for you**, they'll give you an address like `ws://relay.example.com:21042/r2`. Skip to Step 2.
+**If you already have a relay running** (or someone has set one up for you), you just need its address — something like `ws://192.168.1.50:21042/r2` for a relay on your local network, or `ws://203.0.113.45:21042/r2` for one on the internet. Skip to Step 2.
 
-**To run your own relay**, see the [R2 Relay guide](https://github.com/reality2-ai/r2-relay). The short version:
+**Why would you run a relay on a remote server?** If your devices aren't always on the same network — say your laptop is at home and your phone is on mobile data — they can't reach each other directly. A relay on a cheap server (a $5/month VPS, or a Raspberry Pi with a public IP) gives them a meeting point that's always reachable.
+
+**To set up your own relay**, see the [Relay guide](https://github.com/reality2-ai/r2-relay). The quick version:
 
 ```
 git clone https://github.com/reality2-ai/r2-relay.git
 cd r2-relay
-cargo run --release
+./install.sh
 ```
 
-Your relay address will be `ws://your-machine:21042/r2`.
+The script builds and installs everything. Your relay address will be `ws://<your-ip>:21042/r2`.
 
 ### Step 2: Open Notekeeper
 
@@ -43,7 +45,7 @@ Open the Notekeeper page in your browser. You'll see a screen asking you to crea
 A trust group is your private space. Only devices you add can see your notes.
 
 1. Enter a name for this device (e.g. "My Laptop")
-2. Enter the relay address (e.g. `ws://your-machine:21042/r2`)
+2. Enter the relay address (e.g. `ws://192.168.1.50:21042/r2`)
 3. Click **Create New Notekeeper**
 
 You're in. Start writing.
