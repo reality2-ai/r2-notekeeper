@@ -97,7 +97,9 @@ Both devices are now in the same trust group. Notes sync automatically through t
 
 ## Common Questions
 
-**I opened Notekeeper in a different browser and had to join again. Why?**
+---
+
+### I opened Notekeeper in a different browser and had to join again. Why?
 
 Each browser keeps its own separate storage. Chrome, Firefox, Safari, and Edge don't share data with each other — even on the same computer. A private/incognito window is also separate. Each one is a different "device" as far as Notekeeper is concerned.
 
@@ -105,7 +107,9 @@ This is by design. Your trust group keys are stored in the browser that created 
 
 To use Notekeeper in a new browser, join the trust group from there — open Settings on a browser that's already a member, generate an invitation, and use it in the new browser. Your notes will sync across.
 
-**I cleared my browser data (or uninstalled the browser) and lost my trust group. Can I get back in?**
+---
+
+### I cleared my browser data (or uninstalled the browser) and lost my trust group. Can I get back in?
 
 If you have another device still in the trust group, yes — generate a new invitation from that device and rejoin. Your notes will sync back from the other device through the relay.
 
@@ -113,44 +117,58 @@ If all your devices have been cleared, the trust group is gone. There is no pass
 
 This is the trade-off of true privacy: no one can recover your data for you, because no one else ever had it. This is why it's a good idea to have Notekeeper on more than one device — each one is a backup of the other.
 
-**Can I use Notekeeper without a relay?**
+---
+
+### Can I use Notekeeper without a relay?
 
 Yes — for notes on a single device. You can create a trust group, write notes, and they'll persist in your browser. You just won't be able to sync to other devices without a relay connecting them.
 
-**Can other people read my notes if they run the relay?**
+---
+
+### Can other people read my notes if they run the relay?
 
 No. The relay forwards encrypted bytes. It doesn't have your trust group keys and cannot decrypt anything that passes through it. Even if someone captures all the traffic, they see only ciphertext.
 
-**Can I make Notekeeper into an app on my phone or computer?**
+---
 
-Yes. In most browsers, you can install Notekeeper so it appears alongside your other apps:
-
-- **iPhone/iPad (Safari):** Tap the share button, then "Add to Home Screen"
-- **Android (Chrome):** Tap the three-dot menu, then "Add to Home screen" or "Install app"
-- **Chrome/Edge on desktop:** Click the install icon in the address bar (small monitor with a down arrow), or go to the three-dot menu and choose "Install Notekeeper"
-- **macOS (Safari):** File menu, then "Add to Dock"
-
-Once installed, Notekeeper opens in its own window without browser chrome — it looks and feels like a regular app. The icon appears in your app launcher, taskbar, or home screen.
-
-**Can I use an existing trust group from another R2 capability?**
+### Can I use an existing trust group from another R2 capability?
 
 Yes. A trust group is not tied to any single capability. If you already have a trust group from Anthill, TrustTalk, or any other R2 tool, you can join that same group in Notekeeper. Your notes will be accessible on all the devices that are already members — no need to invite them again.
 
 Just use an invitation code from any device in the existing group, and join from the Notekeeper screen.
 
-**Can I just bookmark it?**
+---
+
+### Can I just bookmark it?
 
 Yes — that's the simplest way to use Notekeeper. Bookmark the page, come back anytime. Your trust group membership and notes are stored in your browser and will be there when you return. You don't need to install it as an app unless you want the full-screen experience and home screen icon.
 
 The only thing that would lose your data is clearing your browser's site data for this page (or using private/incognito mode, which doesn't keep anything after the window closes).
 
-**Does it work offline?**
+---
+
+### Can I make Notekeeper into an app on my phone or computer?
+
+Yes. In most browsers, you can install Notekeeper so it appears alongside your other apps:
+
+- **iPhone/iPad (Safari):** Tap the share button, then "Add to Home Screen"
+- **Android (Chrome):** Tap the three-dot menu, then "Add to Home screen" or "Install app"
+- **Chrome/Edge on desktop:** Click the install icon in the address bar, or go to the three-dot menu and choose "Install Notekeeper"
+- **macOS (Safari):** File menu, then "Add to Dock"
+
+Once installed, Notekeeper opens in its own window without browser chrome — it looks and feels like a regular app.
+
+---
+
+### Does it work offline?
 
 Your notes are always available offline — they're stored in your browser's local storage. You can read and edit them without any internet connection.
 
 What requires connectivity is **syncing between devices**. When you edit a note offline, the changes are saved locally. Next time the relay is reachable, your changes sync to your other devices automatically.
 
 If you install Notekeeper as an app (see above), the page itself is cached too — so it loads instantly even without internet.
+
+---
 
 ## How it works
 
