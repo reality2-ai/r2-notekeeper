@@ -740,14 +740,14 @@ function generateQrSvg(text, size) {
         for (let i = 0; i < hexStr.length; i += 2) bytes[i / 2] = parseInt(hexStr.substring(i, i + 2), 16);
         return bytes;
     }
-    function formatShortCode(input) {
+    window.formatShortCode = function(input) {
         // Only format if it looks like a short code being typed (hex chars, not a URL)
         if (input.value.includes('http') || input.value.includes(',')) return;
         let v = input.value.replace(/[^a-fA-F0-9]/g, '').substring(0, 16);
         let parts = [];
         for (let i = 0; i < v.length; i += 4) parts.push(v.substring(i, i + 4));
         input.value = parts.join('-');
-    }
+    };
 
     // Format short code: xxxx-xxxx-xxxx-xxxx (first 8 hex of TG hash + first 8 hex of join code)
     function formatJoinCodeShort(tgHash, joinCodeHex) {
