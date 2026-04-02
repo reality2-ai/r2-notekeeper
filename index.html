@@ -933,6 +933,8 @@ function generateQrSvg(text, size) {
             case 'syncing': el.textContent = 'syncing'; el.classList.add('syncing'); break;
             case 'synced': el.textContent = 'synced'; el.style.color = 'var(--green)';
                 setTimeout(() => { if (el.textContent === 'synced') el.textContent = ''; }, 3000); break;
+            case 'saved': el.textContent = 'saved locally'; el.style.color = 'var(--text-dim)';
+                setTimeout(() => { if (el.textContent === 'saved locally') el.textContent = ''; }, 3000); break;
             default: el.textContent = ''; break;
         }
     }
@@ -1140,7 +1142,7 @@ function generateQrSvg(text, size) {
         if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
         renderNoteList();
         document.getElementById('editor-meta').textContent = `${n.id} \u00b7 ${timeAgo(n.updated_at)}`;
-        updateSyncIndicator('synced');
+        updateSyncIndicator(relay && relay.connected ? 'synced' : 'saved');
     };
     window.deleteCurrentNote = function() {
         if (!currentNoteId || !notes[currentNoteId]) return;
