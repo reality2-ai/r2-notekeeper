@@ -97,8 +97,6 @@ Both devices are now in the same trust group. Notes sync automatically through t
 
 ## Common Questions
 
----
-
 ### I opened Notekeeper in a different browser and had to join again. Why?
 
 Each browser keeps its own separate storage. Chrome, Firefox, Safari, and Edge don't share data with each other — even on the same computer. A private/incognito window is also separate. Each one is a different "device" as far as Notekeeper is concerned.
