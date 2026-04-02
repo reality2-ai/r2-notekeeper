@@ -1737,6 +1737,7 @@ function generateQrSvg(text, size) {
     // ── Init ──
     function initApp() {
         tgShort = hexShort(member.trust_group_id);
+        if (window._r2) { window._r2.member = member; window._r2.trustGroup = trustGroup; }
         document.getElementById('join-screen').style.display = 'none';
         document.getElementById('app-screen').style.display = 'block';
         document.getElementById('app-tg-id').textContent = tgShort;
@@ -1823,6 +1824,9 @@ function generateQrSvg(text, size) {
 
         // Create the R2 Hive (sentant engine)
         hive = new r2.R2Hive();
+
+        // Debug: expose to console
+        window._r2 = { member: null, trustGroup: null, hive, r2 };
         // Check for #join= in URL before deciding what to show
         const hasJoinHash = window.location.hash.startsWith('#join=');
 
