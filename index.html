@@ -356,7 +356,7 @@
             <input id="join-name" class="field-input" placeholder="Device name">
         </div>
         <div class="field">
-            <input id="relay-url" class="field-input" placeholder="Relay URL" style="font-family:var(--mono);font-size:12px">
+            <input id="relay-url" class="field-input" value="wss://relay.reality2.ai/r2" style="font-family:var(--mono);font-size:12px">
         </div>
         <div id="join-error" class="error"></div>
         <button class="btn btn-primary btn-block" onclick="joinTrustGroup()">Join Trust Group</button>
@@ -515,7 +515,7 @@
     <div class="settings-section">
         <h3>Relay</h3>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-            <input id="settings-relay-input" class="field-input" placeholder="ws://host:21042/r2"
+            <input id="settings-relay-input" class="field-input" placeholder="wss://relay.reality2.ai/r2"
                    style="font-family:var(--mono);font-size:12px;padding:8px 12px;flex:1">
             <button class="btn btn-small btn-primary" onclick="updateRelay()">Connect</button>
         </div>
