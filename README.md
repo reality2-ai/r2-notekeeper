@@ -112,6 +112,25 @@ Yes — for notes on a single device. You can create a trust group, write notes,
 
 No. The relay forwards encrypted bytes. It doesn't have your trust group keys and cannot decrypt anything that passes through it. Even if someone captures all the traffic, they see only ciphertext.
 
+**Can I make Notekeeper into an app on my phone or computer?**
+
+Yes. In most browsers, you can install Notekeeper so it appears alongside your other apps:
+
+- **iPhone/iPad (Safari):** Tap the share button, then "Add to Home Screen"
+- **Android (Chrome):** Tap the three-dot menu, then "Add to Home screen" or "Install app"
+- **Chrome/Edge on desktop:** Click the install icon in the address bar (small monitor with a down arrow), or go to the three-dot menu and choose "Install Notekeeper"
+- **macOS (Safari):** File menu, then "Add to Dock"
+
+Once installed, Notekeeper opens in its own window without browser chrome — it looks and feels like a regular app. The icon appears in your app launcher, taskbar, or home screen.
+
+**Does it work offline?**
+
+Your notes are always available offline — they're stored in your browser's local storage. You can read and edit them without any internet connection.
+
+What requires connectivity is **syncing between devices**. When you edit a note offline, the changes are saved locally. Next time the relay is reachable, your changes sync to your other devices automatically.
+
+If you install Notekeeper as an app (see above), the page itself is cached too — so it loads instantly even without internet.
+
 ## How it works
 
 Notekeeper is built with the Reality2 protocol stack, compiled to WebAssembly (70KB). When you open the page, the R2 stack loads in your browser and your browser becomes a node in the mesh.
