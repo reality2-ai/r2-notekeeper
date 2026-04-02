@@ -660,6 +660,8 @@ function generateQrSvg(text, size) {
             if (this.onStatus) this.onStatus(status);
             const el = document.getElementById('relay-status');
             if (el) el.textContent = status;
+            const sel = document.getElementById('settings-relay-status');
+            if (sel) sel.textContent = this.connected ? 'connected' : status;
         }
     }
 
