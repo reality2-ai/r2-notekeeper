@@ -523,172 +523,21 @@
     </div>
 </div>
 
+<script src="qrcode.min.js"></script>
 <script>
-// Minimal QR code generator (alphanumeric, version 1-6, error correction L)
-// Produces an SVG string. No external dependencies.
+// QR code wrapper using qrcode-generator library
 function generateQrSvg(text, size) {
-    // Use a canvas-based approach with the simplest possible QR encoding
-    // For brevity, delegate to a tiny inline encoder
-    const modules = qrEncode(text);
-    if (!modules) return '';
-    const n = modules.length;
-    const cellSize = Math.floor(size / (n + 8)); // quiet zone
-    const totalSize = cellSize * (n + 8);
-    const offset = cellSize * 4; // quiet zone
-    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalSize}" height="${totalSize}" viewBox="0 0 ${totalSize} ${totalSize}">`;
-    svg += `<rect width="${totalSize}" height="${totalSize}" fill="white"/>`;
-    for (let y = 0; y < n; y++) {
-        for (let x = 0; x < n; x++) {
-            if (modules[y][x]) {
-                svg += `<rect x="${offset + x * cellSize}" y="${offset + y * cellSize}" width="${cellSize}" height="${cellSize}" fill="#1c1c21"/>`;
-            }
-        }
+    try {
+        var qr = qrcode(0, 'L');
+        qr.addData(text);
+        qr.make();
+        return qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+    } catch (e) {
+        console.warn('QR generation failed:', e);
+        return '';
     }
-    svg += '</svg>';
-    return svg;
 }
 
-// QR encoding (byte mode, ECC L, versions 1-10)
-function qrEncode(text) {
-    const data = new TextEncoder().encode(text);
-    const len = data.length;
-    // Version selection (byte mode capacity at ECC L)
-    const caps = [0,17,32,53,78,106,134,154,192,230,271];
-    let ver = 0;
-    for (let v = 1; v <= 10; v++) { if (len <= caps[v]) { ver = v; break; } }
-    if (!ver) return null; // too long
-
-    const size = 17 + ver * 4;
-    const grid = Array.from({length: size}, () => new Uint8Array(size));
-    const reserved = Array.from({length: size}, () => new Uint8Array(size));
-
-    // Finder patterns
-    function finderPattern(ox, oy) {
-        for (let y = -1; y <= 7; y++) for (let x = -1; x <= 7; x++) {
-            const px = ox + x, py = oy + y;
-            if (px < 0 || py < 0 || px >= size || py >= size) continue;
-            const ring = Math.max(Math.abs(x - 3), Math.abs(y - 3));
-            grid[py][px] = (ring !== 2 && ring !== 4) ? 1 : 0;
-            reserved[py][px] = 1;
-        }
-    }
-    finderPattern(0, 0); finderPattern(size - 7, 0); finderPattern(0, size - 7);
-
-    // Timing patterns
-    for (let i = 8; i < size - 8; i++) {
-        grid[6][i] = grid[i][6] = (i % 2 === 0) ? 1 : 0;
-        reserved[6][i] = reserved[i][6] = 1;
-    }
-
-    // Alignment patterns (ver >= 2)
-    if (ver >= 2) {
-        const positions = [6, [0,0,0,0,0, 6,18, 6,22, 6,26, 6,30, 6,34, 6,22,38][ver * 2 - 2] || (size - 7)];
-        // Simplified: one alignment pattern for ver 2-6
-        const ap = ver === 2 ? [[18,18]] : ver === 3 ? [[22,22]] : ver === 4 ? [[26,26]] :
-                   ver === 5 ? [[30,30]] : ver === 6 ? [[34,34]] : [];
-        for (const [cx, cy] of ap) {
-            for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
-                const px = cx+dx, py = cy+dy;
-                if (reserved[py][px]) continue;
-                grid[py][px] = (Math.abs(dx) === 2 || Math.abs(dy) === 2 || (dx === 0 && dy === 0)) ? 1 : 0;
-                reserved[py][px] = 1;
-            }
-        }
-    }
-
-    // Reserve format info areas
-    for (let i = 0; i < 8; i++) {
-        reserved[8][i] = reserved[i][8] = 1;
-        reserved[8][size-1-i] = reserved[size-1-i][8] = 1;
-    }
-    reserved[8][8] = 1;
-    grid[size - 8][8] = 1; reserved[size-8][8] = 1; // dark module
-
-    // Encode data
-    const totalCodewords = [0,26,44,70,100,134,172,196,242,292,346][ver];
-    const eccCodewords = [0,7,10,15,20,26,18,20,24,30,18][ver];
-    const dataCodewords = totalCodewords - eccCodewords;
-
-    // Build bit stream: mode(4) + count(8) + data + terminator + padding
-    let bits = [];
-    function pushBits(val, n) { for (let i = n-1; i >= 0; i--) bits.push((val >> i) & 1); }
-    pushBits(0b0100, 4); // byte mode
-    pushBits(len, ver >= 10 ? 16 : 8);
-    for (const b of data) pushBits(b, 8);
-    pushBits(0, Math.min(4, dataCodewords * 8 - bits.length));
-    while (bits.length % 8) bits.push(0);
-    const pads = [0xEC, 0x11];
-    let pi = 0;
-    while (bits.length < dataCodewords * 8) { pushBits(pads[pi], 8); pi ^= 1; }
-
-    // Convert to codewords
-    const codewords = [];
-    for (let i = 0; i < bits.length; i += 8)
-        codewords.push(bits.slice(i, i+8).reduce((a, b) => (a << 1) | b, 0));
-
-    // Reed-Solomon ECC (GF(256) with primitive polynomial 0x11d)
-    const gfExp = new Uint8Array(512), gfLog = new Uint8Array(256);
-    let val = 1;
-    for (let i = 0; i < 255; i++) { gfExp[i] = val; gfLog[val] = i; val = (val << 1) ^ (val >= 128 ? 0x11d : 0); }
-    for (let i = 255; i < 512; i++) gfExp[i] = gfExp[i - 255];
-    function gfMul(a, b) { return (a === 0 || b === 0) ? 0 : gfExp[gfLog[a] + gfLog[b]]; }
-
-    // Generator polynomial
-    let gen = [1];
-    for (let i = 0; i < eccCodewords; i++) {
-        const ng = new Array(gen.length + 1).fill(0);
-        for (let j = 0; j < gen.length; j++) {
-            ng[j] ^= gen[j];
-            ng[j+1] ^= gfMul(gen[j], gfExp[i]);
-        }
-        gen = ng;
-    }
-
-    // Polynomial division
-    const msg = [...codewords, ...new Array(eccCodewords).fill(0)];
-    for (let i = 0; i < dataCodewords; i++) {
-        const coef = msg[i];
-        if (coef !== 0) for (let j = 0; j < gen.length; j++) msg[i+j] ^= gfMul(gen[j], coef);
-    }
-    const ecc = msg.slice(dataCodewords);
-    const allCodewords = [...codewords, ...ecc];
-
-    // Place data bits
-    const allBits = [];
-    for (const cw of allCodewords) for (let i = 7; i >= 0; i--) allBits.push((cw >> i) & 1);
-
-    let bitIdx = 0;
-    for (let right = size - 1; right >= 1; right -= 2) {
-        if (right === 6) right = 5;
-        for (let vert = 0; vert < size; vert++) {
-            for (let j = 0; j < 2; j++) {
-                const x = right - j;
-                const upward = ((Math.floor((size - 1 - right) / 2)) % 2) === 0;
-                const y = upward ? (size - 1 - vert) : vert;
-                if (reserved[y][x]) continue;
-                if (bitIdx < allBits.length) grid[y][x] = allBits[bitIdx++];
-            }
-        }
-    }
-
-    // Apply mask (pattern 0: (y+x) % 2 === 0) and format info
-    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-        if (!reserved[y][x]) grid[y][x] ^= ((y + x) % 2 === 0) ? 1 : 0;
-    }
-
-    // Format bits for ECC L, mask 0
-    const fmtBits = [1,1,1,0,1,1,1,1,1,0,0,0,1,0,0];
-    const fmtPositions = [
-        [[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[7,8],[8,8],[8,7],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0]],
-        [[8,size-1],[8,size-2],[8,size-3],[8,size-4],[8,size-5],[8,size-6],[8,size-7],[8,size-8],[size-7,8],[size-6,8],[size-5,8],[size-4,8],[size-3,8],[size-2,8],[size-1,8]]
-    ];
-    for (const positions of fmtPositions)
-        for (let i = 0; i < 15; i++) grid[positions[i][0]][positions[i][1]] = fmtBits[i];
-
-    // Version info (ver >= 7 only, skip for now)
-
-    return grid;
-}
 </script>
 <script type="module">
     import init, * as r2 from './pkg/r2_wasm.js';
@@ -853,19 +702,21 @@ function qrEncode(text) {
         return null;
     }
 
-    // Build QR-ready URL: r2://relay/tg_hash/join_code_short
+    // Build QR-ready URL: https://reality2-ai.github.io/r2-notekeeper/#join=relay,tg_hash,short_code
+    // Phone scans QR → opens notekeeper in browser → auto-fills invitation
     function buildInvitationUrl(relayUrl, tgHash, joinCodeHex) {
         const shortCode = joinCodeHex.substring(0, 12);
-        // Use relay URL but replace ws:// with r2://
-        let base = relayUrl.replace(/^wss?:\/\//, '');
-        // Remove /r2 path if present
-        base = base.replace(/\/r2$/, '');
-        return `r2://${base}/${tgHash}/${shortCode}`;
+        // Encode relay URL (strip ws:// prefix, will be re-added on parse)
+        let relay = relayUrl.replace(/^wss?:\/\//, '').replace(/\/r2$/, '');
+        return `https://reality2-ai.github.io/r2-notekeeper/#join=${relay},${tgHash},${shortCode}`;
     }
 
-    // Parse invitation URL: r2://host:port/tg_hash/short_code
+    // Parse invitation URL: https://.../#join=relay,tg_hash,short_code
     function parseInvitationUrl(url) {
-        const m = url.match(/^r2:\/\/([^/]+)\/([a-f0-9]{16})\/([a-f0-9]{12})$/i);
+        // Match the hash fragment format
+        const hashMatch = url.match(/#join=(.+)$/);
+        if (hashMatch) url = hashMatch[1]; // extract just the data part
+        const m = url.match(/^([^,]+),([a-f0-9]{16}),([a-f0-9]{12})$/i);
         if (!m) return null;
         return {
             relayUrl: `ws://${m[1]}/r2`,
@@ -1529,14 +1380,19 @@ function qrEncode(text) {
     function checkHashJoin() {
         const hash = window.location.hash;
         if (hash.startsWith('#join=')) {
-            const code = decodeURIComponent(hash.slice(6));
-            if (code) setTimeout(() => {
-                const i = document.getElementById('join-code');
-                if (i) { i.value = code; i.focus(); }
-                // If it's an r2:// URL, extract the relay URL too
-                const parsed = parseInvitationUrl(code);
+            const data = decodeURIComponent(hash.slice(6));
+            if (data) setTimeout(() => {
+                // Parse the relay,tg_hash,short_code format
+                const parsed = parseInvitationUrl(data);
                 if (parsed) {
+                    // Auto-fill relay URL and build the full invitation for the join field
                     document.getElementById('relay-url').value = parsed.relayUrl;
+                    document.getElementById('join-code').value = data;
+                    document.getElementById('join-code').focus();
+                } else {
+                    // Fall back to treating it as a raw code
+                    const i = document.getElementById('join-code');
+                    if (i) { i.value = data; i.focus(); }
                 }
             }, 100);
             history.replaceState(null, '', location.pathname + location.search);
