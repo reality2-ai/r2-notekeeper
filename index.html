@@ -1393,7 +1393,7 @@ function generateQrSvg(text, size) {
             saveAuth(); initApp();
         } catch (e) { showError(e.message); }
     };
-    window.joinTrustGroup = function() {
+    window.joinTrustGroup = async function() {
         hideError();
         const codeInput = document.getElementById('join-code').value.trim();
         const deviceName = document.getElementById('join-name').value.trim() || 'unnamed';
@@ -1411,13 +1411,25 @@ function generateQrSvg(text, size) {
             document.getElementById('relay-url').value = relayUrl;
         } else {
             // Try as word code (word1-word2-word3 or word1 word2 word3)
-            try {
-                const wordResult = r2.decode_word_code(codeInput);
-                if (wordResult) {
-                    tgHash = wordResult.tg_prefix_hex; // 3 hex chars (prefix match)
-                    joinCodeHex = wordResult.join_secret_hex.padEnd(32, '0');
+            // Look up on relay for full join code
+            if (/^[a-z]+-[a-z]+-[a-z]+$/.test(codeInput) || /^[a-z]+ [a-z]+ [a-z]+$/.test(codeInput)) {
+                const wordKey = codeInput.replace(/ /g, '-').toLowerCase();
+                const relayBase = relayUrl.replace('wss://', 'https://').replace('ws://', 'http://').replace('/r2', '');
+                try {
+                    const resp = await fetch(relayBase + '/word-code/' + encodeURIComponent(wordKey));
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        tgHash = data.tg_hash;
+                        joinCodeHex = data.join_code;
+                    } else {
+                        showError('Word code not found or expired. Ask the key holder to generate a new one.');
+                        return;
+                    }
+                } catch (e) {
+                    showError('Could not reach relay to look up word code.');
+                    return;
                 }
-            } catch {}
+            }
 
             // Try as hex short code if words didn't match
             if (!tgHash) {
@@ -1560,6 +1572,16 @@ function generateQrSvg(text, size) {
         let currentWordCode = '';
         try {
             currentWordCode = r2.encode_word_code(tgHash, codeHex);
+            // Register word code with relay for lookup
+            const relayUrl = localStorage.getItem(SK_RELAY_URL);
+            if (relayUrl && currentWordCode) {
+                const relayBase = relayUrl.replace('wss://', 'https://').replace('ws://', 'http://').replace('/r2', '');
+                fetch(relayBase + '/word-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ words: currentWordCode, tg_hash: tgHash, join_code: codeHex })
+                }).catch(() => {});
+            }
         } catch (e) { console.warn('Word code generation failed:', e); }
         document.getElementById('settings-word-code').textContent = currentWordCode || currentShortCode;
 
