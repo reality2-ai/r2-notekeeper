@@ -15,7 +15,7 @@ Notekeeper runs entirely in your web browser. Your notes are encrypted with keys
 
 ### What you need
 
-1. A web browser (Chrome, Edge, Firefox, or Safari)
+1. A modern web browser (any browser that supports WebAssembly — which is all of them these days)
 2. A relay running somewhere (see below)
 
 ### Step 1: Connect to a relay
@@ -99,7 +99,7 @@ Both devices are now in the same trust group. Notes sync automatically through t
 
 ### I opened Notekeeper in a different browser and had to join again. Why?
 
-Each browser keeps its own separate storage. Chrome, Firefox, Safari, and Edge don't share data with each other — even on the same computer. A private/incognito window is also separate. Each one is a different "device" as far as Notekeeper is concerned.
+Each browser keeps its own separate storage. Different browsers don't share data with each other — even on the same computer. A private/incognito window is also separate. Each one is a different "device" as far as Notekeeper is concerned.
 
 This is by design. Your trust group keys are stored in the browser that created them. If any browser could access another browser's keys, that would be a security problem.
 
@@ -150,8 +150,9 @@ The only thing that would lose your data is clearing your browser's site data fo
 Yes. In most browsers, you can install Notekeeper so it appears alongside your other apps:
 
 - **iPhone/iPad (Safari):** Tap the share button, then "Add to Home Screen"
-- **Android (Chrome):** Tap the three-dot menu, then "Add to Home screen" or "Install app"
-- **Chrome/Edge on desktop:** Click the install icon in the address bar, or go to the three-dot menu and choose "Install Notekeeper"
+- **Android (Chrome, Brave, Edge):** Tap the three-dot menu, then "Add to Home screen" or "Install app"
+- **Chrome/Brave/Edge on desktop:** Click the install icon in the address bar, or go to the three-dot menu and choose "Install Notekeeper"
+- **Firefox on desktop:** Not directly installable as PWA, but bookmarking works perfectly
 - **macOS (Safari):** File menu, then "Add to Dock"
 
 Once installed, Notekeeper opens in its own window without browser chrome — it looks and feels like a regular app.
