@@ -1667,8 +1667,29 @@ function generateQrSvg(text, size) {
         HASH_CREATE = r2.r2_hash('note.create');
         HASH_UPDATE = r2.r2_hash('note.update');
         HASH_DELETE = r2.r2_hash('note.delete');
-        if (loadAuth()) initApp();
-        else {
+        // Check for #join= in URL before deciding what to show
+        const hasJoinHash = window.location.hash.startsWith('#join=');
+
+        if (loadAuth() && !hasJoinHash) {
+            initApp();
+        } else if (loadAuth() && hasJoinHash) {
+            // Already in a trust group but received a join link — ask what to do
+            if (confirm('You received an invitation to join a trust group.\n\nLeave your current trust group and join the new one?')) {
+                // Clear current state and show join screen
+                if (relay) relay.disconnect();
+                const relayUrl = localStorage.getItem(SK_RELAY_URL);
+                [SK_MEMBER, SK_TG, SK_ROLE].forEach(k => localStorage.removeItem(k));
+                localStorage.removeItem(notesKey()); localStorage.removeItem(eventsKey());
+                trustGroup = null; member = null; isKeyHolder = false;
+                document.getElementById('join-screen').style.display = 'flex';
+                if (relayUrl) document.getElementById('relay-url').value = relayUrl;
+                checkHashJoin();
+            } else {
+                // Stay in current trust group, clear the hash
+                history.replaceState(null, '', location.pathname + location.search);
+                initApp();
+            }
+        } else {
             document.getElementById('join-screen').style.display = 'flex';
             const savedRelay = localStorage.getItem(SK_RELAY_URL);
             if (savedRelay) document.getElementById('relay-url').value = savedRelay;
