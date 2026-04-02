@@ -531,9 +531,11 @@
             <span class="value" id="settings-relay-status">—</span>
         </div>
     </div>
-    <div class="settings-section" id="settings-devices-section" style="display:none">
+    <div class="settings-section" id="settings-devices-section">
         <h3>Devices</h3>
-        <div id="settings-devices-list" style="margin-bottom:12px"></div>
+        <div id="settings-devices-list" style="margin-bottom:12px">
+            <div style="font-size:12px;color:var(--text-faint)">Open Settings to see devices</div>
+        </div>
     </div>
     <div class="settings-section" id="settings-key-section" style="display:none">
         <h3>Trust Group Key</h3>
@@ -608,6 +610,7 @@ function generateQrSvg(text, size) {
     const SK_ROLE = 'r2_role';
     const SK_DEVICE_NAME = 'r2_device_name';
     const SK_RELAY_URL = 'r2_relay_url';
+    const SK_MEMBERS = 'r2_members';
 
     let autoSaveTimer = null;
     let isDirty = false;
@@ -1243,6 +1246,9 @@ function generateQrSvg(text, size) {
                 resp[0] = 0xFF; resp[1] = JOIN_RESPONSE;
                 resp.set(devicePk, 2); resp.set(tgPk, 34); resp.set(encrypted, 66);
                 relay.send(resp);
+                // Save member list to localStorage (TrustGroup state doesn't persist members)
+                const memberNames = trustGroup.member_names() || [];
+                localStorage.setItem(SK_MEMBERS, JSON.stringify(memberNames));
                 events.unshift({ ts: nowNum(), op: 'join.accepted', note_id: hex(devicePk).substring(0, 8), msg_id: 0, frame_hex: '', hmac_hex: '' });
                 saveEvents(); renderEventLog();
             } catch (e) { console.warn('Join request failed:', e); }
@@ -1391,22 +1397,6 @@ function generateQrSvg(text, size) {
                 document.getElementById('settings-invite-keyholder-text').style.display = 'block';
                 document.getElementById('settings-invite-member-note').style.display = 'none';
                 document.getElementById('settings-key-section').style.display = 'block';
-                // Populate device list
-                document.getElementById('settings-devices-section').style.display = 'block';
-                const names = trustGroup.member_names();
-                const listEl = document.getElementById('settings-devices-list');
-                if (names && names.length > 0) {
-                    listEl.innerHTML = names.map(name =>
-                        `<div class="settings-row">
-                            <span class="label" style="display:flex;align-items:center;gap:6px">
-                                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
-                                ${escHtml(name)}
-                            </span>
-                        </div>`
-                    ).join('');
-                } else {
-                    listEl.innerHTML = '<div style="font-size:12px;color:var(--text-faint)">No other devices</div>';
-                }
             } else {
                 // Member (not key holder) — show invitation section with explanation
                 document.getElementById('settings-invite-section').style.display = 'block';
@@ -1415,6 +1405,36 @@ function generateQrSvg(text, size) {
                 document.getElementById('settings-invite-btn').style.display = 'none';
                 document.getElementById('settings-invite-display').style.display = 'none';
             }
+
+            // Device list - show self + known members
+            const listEl = document.getElementById('settings-devices-list');
+            const selfName = localStorage.getItem(SK_DEVICE_NAME) || 'this device';
+            let deviceHtml = `<div class="settings-row">
+                <span class="label" style="display:flex;align-items:center;gap:6px">
+                    <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+                    ${escHtml(selfName)} <span style="color:var(--text-faint);font-size:10px">(this device)</span>
+                </span>
+            </div>`;
+            let memberNames = [];
+            if (isKeyHolder && trustGroup) {
+                memberNames = trustGroup.member_names() || [];
+                if (memberNames.length === 0) {
+                    try { memberNames = JSON.parse(localStorage.getItem(SK_MEMBERS) || '[]'); } catch {}
+                }
+            } else {
+                try { memberNames = JSON.parse(localStorage.getItem(SK_MEMBERS) || '[]'); } catch {}
+            }
+            memberNames.forEach(name => {
+                if (name !== selfName) {
+                    deviceHtml += `<div class="settings-row">
+                        <span class="label" style="display:flex;align-items:center;gap:6px">
+                            <span style="width:6px;height:6px;border-radius:50%;background:var(--text-faint);display:inline-block"></span>
+                            ${escHtml(name)}
+                        </span>
+                    </div>`;
+                }
+            });
+            listEl.innerHTML = deviceHtml;
         }
     };
     let currentShortCode = '';
