@@ -362,6 +362,15 @@
         <button class="btn btn-primary btn-block" onclick="joinTrustGroup()">Join Trust Group</button>
         <div class="or-divider">or</div>
         <button class="btn btn-secondary btn-block" onclick="createTrustGroup()">Create New Notekeeper</button>
+        <div class="or-divider">or</div>
+        <div id="restore-section" style="text-align:left">
+            <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Restore from a previously exported key:</p>
+            <div style="display:flex;gap:8px">
+                <input id="join-restore-input" class="field-input" placeholder="Paste key here" style="font-family:var(--mono);font-size:11px;padding:8px 12px;flex:1">
+                <button class="btn btn-primary" onclick="restoreFromJoinScreen()" style="padding:8px 16px;font-size:13px">Restore</button>
+            </div>
+            <div id="join-restore-error" style="font-size:12px;color:var(--red);margin-top:6px;display:none"></div>
+        </div>
         <p class="join-footer">
             Powered by <span>r2-wasm</span> &mdash; the R2 protocol stack running in your browser.
         </p>
@@ -1489,6 +1498,32 @@ function generateQrSvg(text, size) {
             member = r2.complete_join(new Uint8Array(kp.secret_key), new Uint8Array(trustGroup.public_key), enc, now());
             saveAuth();
             toggleSettings();
+            initApp();
+        } catch (e) {
+            errEl.textContent = 'Invalid key: ' + (e.message || e);
+            errEl.style.display = 'block';
+        }
+    };
+
+    window.restoreFromJoinScreen = function() {
+        const input = document.getElementById('join-restore-input').value.trim();
+        const errEl = document.getElementById('join-restore-error');
+        const relayUrl = document.getElementById('relay-url').value.trim();
+        errEl.style.display = 'none';
+        if (!input) { errEl.textContent = 'Paste a key first.'; errEl.style.display = 'block'; return; }
+        try {
+            const bytes = new Uint8Array(atob(input).split('').map(c => c.charCodeAt(0)));
+            const restored = r2.R2TrustGroup.from_bytes(bytes, now());
+            trustGroup = restored;
+            isKeyHolder = true;
+            const kp = r2.generate_device_keypair();
+            const deviceName = document.getElementById('join-name').value.trim() || 'restored';
+            const code = trustGroup.generate_join_code(now(), BigInt(300));
+            const enc = trustGroup.process_join(code, new Uint8Array(kp.public_key), deviceName, now());
+            member = r2.complete_join(new Uint8Array(kp.secret_key), new Uint8Array(trustGroup.public_key), enc, now());
+            localStorage.setItem(SK_DEVICE_NAME, deviceName);
+            if (relayUrl) localStorage.setItem(SK_RELAY_URL, relayUrl);
+            saveAuth();
             initApp();
         } catch (e) {
             errEl.textContent = 'Invalid key: ' + (e.message || e);
