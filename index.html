@@ -322,7 +322,11 @@
             .editor.mobile-visible { display: flex; }
             .editor-title { font-size: 22px; padding: 16px 20px 8px; }
             .editor-content { padding: 4px 20px 20px; font-size: 15px; }
-            .app-header h1 { font-size: 17px; }
+            .app-header { padding: 10px 16px; }
+            .app-header h1 { font-size: 15px; }
+            .app-header svg { display: none; }
+            .header-meta { display: none; }
+            .header-actions .relay-text { display: none; }
             .join-box { padding: 24px 20px; }
             .join-box h1 { font-size: 28px; }
             .invite-code-display { font-size: 9px; }
@@ -394,7 +398,7 @@
             </div>
         </div></div>
         <div class="header-actions">
-            <span id="relay-status" style="font-size:10px;font-family:var(--mono);color:var(--text-faint)"></span>
+            <span id="relay-status" class="relay-text" style="font-size:10px;font-family:var(--mono);color:var(--text-faint)"></span>
             <button class="btn btn-small btn-secondary" id="event-log-toggle" onclick="toggleEventLog()">Events</button>
             <button class="btn btn-small btn-secondary" onclick="toggleSettings()" id="settings-toggle">Settings</button>
         </div>
@@ -492,7 +496,10 @@
     </div>
     <div class="settings-section" id="settings-invite-section" style="display:none">
         <h3>Invitation</h3>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Generate a code to add another device to this trust group. Valid for 5 minutes, single use.</p>
+        <div id="settings-invite-member-note" style="display:none">
+            <p style="font-size:12px;color:var(--text-dim);line-height:1.5">To add another device, generate an invitation on the device that created the trust group (the key holder). That device needs to be open and connected to the relay.</p>
+        </div>
+        <p id="settings-invite-keyholder-text" style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Generate a code to add another device to this trust group. Valid for 5 minutes, single use.</p>
         <div id="settings-invite-display" style="display:none">
             <div style="text-align:center;padding:16px 0 8px">
                 <div id="settings-short-code" style="font-family:var(--mono);font-size:28px;letter-spacing:4px;color:var(--accent);user-select:all;cursor:pointer" onclick="copyShortCode()"></div>
@@ -1381,6 +1388,8 @@ function generateQrSvg(text, size) {
             // Show invite section for key holders
             if (isKeyHolder) {
                 document.getElementById('settings-invite-section').style.display = 'block';
+                document.getElementById('settings-invite-keyholder-text').style.display = 'block';
+                document.getElementById('settings-invite-member-note').style.display = 'none';
                 document.getElementById('settings-key-section').style.display = 'block';
                 // Populate device list
                 document.getElementById('settings-devices-section').style.display = 'block';
@@ -1398,6 +1407,13 @@ function generateQrSvg(text, size) {
                 } else {
                     listEl.innerHTML = '<div style="font-size:12px;color:var(--text-faint)">No other devices</div>';
                 }
+            } else {
+                // Member (not key holder) — show invitation section with explanation
+                document.getElementById('settings-invite-section').style.display = 'block';
+                document.getElementById('settings-invite-keyholder-text').style.display = 'none';
+                document.getElementById('settings-invite-member-note').style.display = 'block';
+                document.getElementById('settings-invite-btn').style.display = 'none';
+                document.getElementById('settings-invite-display').style.display = 'none';
             }
         }
     };
