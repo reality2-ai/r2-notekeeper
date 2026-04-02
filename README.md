@@ -121,6 +121,17 @@ No. The relay forwards encrypted bytes. It doesn't have your trust group keys an
 
 ---
 
+### I'm getting an error about insecure WebSocket connections
+
+If you're using Notekeeper from `https://` (like GitHub Pages) and your relay is on `ws://` (not encrypted), the browser will block the connection. This is a browser security rule — HTTPS pages can't make insecure connections.
+
+**Solutions:**
+- **For local relays:** `ws://localhost:21042/r2` works from HTTPS — browsers allow localhost as an exception
+- **For remote relays:** set up TLS on your relay (put nginx or caddy in front) and use `wss://` instead of `ws://`
+- **For testing:** run Notekeeper locally over HTTP (`python3 -m http.server 21045` in the r2-notekeeper directory) — then `ws://` works fine
+
+---
+
 ### Can I use an existing trust group from another R2 capability?
 
 Yes. A trust group is not tied to any single capability. If you already have a trust group from Anthill, TrustTalk, or any other R2 tool, you can join that same group in Notekeeper. Your notes will be accessible on all the devices that are already members — no need to invite them again.

@@ -1311,6 +1311,8 @@ function generateQrSvg(text, size) {
         }
 
         if (!relayUrl) { showError('Enter a relay URL — needed to reach the trust group.'); return; }
+        const relayWarning = checkRelayUrl(relayUrl);
+        if (relayWarning) { showError(relayWarning); return; }
 
         // If we have tgHash, we can connect. If not (short code only), we need it from relay URL field.
         // For short code, we need the trust group hash — but we don't have it!
@@ -1541,8 +1543,27 @@ function generateQrSvg(text, size) {
         alert('Device revocation is not yet implemented in the WASM layer.');
     };
 
+    // Check if ws:// will be blocked (HTTPS page + non-localhost ws://)
+    function checkRelayUrl(url) {
+        if (window.location.protocol === 'https:' && url.startsWith('ws://')) {
+            try {
+                const u = new URL(url);
+                if (u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') {
+                    return 'This page is served over HTTPS, so the relay needs a secure connection (wss://). Either use wss:// with TLS on your relay, or run Notekeeper locally over HTTP.';
+                }
+            } catch {}
+        }
+        return null;
+    }
+
     window.updateRelay = function() {
         const url = document.getElementById('settings-relay-input').value.trim();
+        const warning = checkRelayUrl(url);
+        if (warning) {
+            document.getElementById('settings-relay-status').textContent = 'ws:// blocked from HTTPS';
+            alert(warning);
+            return;
+        }
         if (relay) relay.disconnect();
         if (!url) {
             localStorage.removeItem(SK_RELAY_URL);
@@ -1582,7 +1603,7 @@ function generateQrSvg(text, size) {
         loadNotes(); loadEvents();
         renderNoteList(); renderEditor(); renderEventLog();
         const relayUrl = localStorage.getItem(SK_RELAY_URL);
-        if (relayUrl) {
+        if (relayUrl && !checkRelayUrl(relayUrl)) {
             relay = new R2RelayTransport(relayUrl, member);
             relay.onFrame = (data) => {
                 if (isJoinMessage(data)) handleJoinMessage(data);
