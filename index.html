@@ -1459,6 +1459,7 @@ function generateQrSvg(text, size) {
             const helloJson = JSON.stringify({ type: 'hello', version: 1, trust_group: tgHash, device_id: devicePkHex, timestamp: ts, signature: hex(sigBytes) });
             const ws = new WebSocket(relayUrl);
             ws.binaryType = 'arraybuffer';
+            ws.onopen = () => ws.send(helloJson);
             ws.onmessage = (evt) => {
                 if (typeof evt.data === 'string') {
                     const msg = JSON.parse(evt.data);
@@ -1479,6 +1480,9 @@ function generateQrSvg(text, size) {
                     if (isJoinMessage(data) && data[1] === JOIN_RESPONSE) { handleJoinMessage(data); ws.close(); }
                 }
             };
+            ws.onerror = () => showError('Relay connection failed.');
+            ws.onclose = (evt) => { if (!member && evt.code === 4401) showError('Auth failed.'); };
+        } catch (e) { showError(e.message || e); }
     };
     window.toggleSettings = function() {
         const panel = document.getElementById('settings-panel');
