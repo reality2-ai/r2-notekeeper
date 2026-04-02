@@ -119,7 +119,7 @@
 
     // TV15: {1: 255, 2: 128, 3: 0}
     const cbor_tv15 = r2.cbor_encode_int_map(new Uint8Array([1, 2, 3]), new Uint32Array([255, 128, 0]));
-    assert('CBOR TV15 {1:255, 2:128, 3:0}', hex(cbor_tv15) === 'a30118ff02188003 00', `got ${hex(cbor_tv15)}`);
+    assert('CBOR TV15 {1:255, 2:128, 3:0}', hex(cbor_tv15) === 'a30118ff0218800300', `got ${hex(cbor_tv15)}`);
 
     // TV11: {3: 1771027200}
     const cbor_tv11 = r2.cbor_encode_int_map(new Uint8Array([3]), new Uint32Array([1771027200]));
