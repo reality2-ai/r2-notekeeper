@@ -3,7 +3,9 @@
 export const memory: WebAssembly.Memory;
 export const __wbg_r2member_free: (a: number, b: number) => void;
 export const __wbg_r2trustgroup_free: (a: number, b: number) => void;
+export const cbor_decode_note_event: (a: number, b: number) => [number, number, number];
 export const cbor_encode_int_map: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const cbor_encode_note_event: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
 export const complete_join: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint) => [number, number, number];
 export const compute_trust_group_hash: (a: number, b: number) => [number, number, number, number];
 export const decode_compact_frame: (a: number, b: number) => [number, number, number];
@@ -24,6 +26,7 @@ export const frame_with_be_prefix: (a: number, b: number) => [number, number];
 export const frame_with_le_prefix: (a: number, b: number) => [number, number];
 export const generate_device_keypair: () => [number, number, number];
 export const hmac_compact_tag: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const hmac_extended_tag: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const r2_hash: (a: number, b: number) => [number, number, number];
 export const r2_version: () => [number, number];
 export const r2member_dek: (a: number) => [number, number];
@@ -49,6 +52,7 @@ export const sign_ed25519: (a: number, b: number, c: number, d: number) => [numb
 export const transcode_to_compact: (a: number, b: number) => [number, number, number, number];
 export const transcode_to_extended: (a: number, b: number) => [number, number, number, number];
 export const verify_compact_hmac: (a: number, b: number, c: number, d: number) => [number, number, number];
+export const verify_extended_hmac: (a: number, b: number, c: number, d: number) => [number, number, number];
 export const __wbg_r2hive_free: (a: number, b: number) => void;
 export const r2hive_drain_outbound: (a: number) => [number, number];
 export const r2hive_new: () => number;

@@ -165,12 +165,27 @@ export class R2TrustGroup {
 }
 
 /**
+ * Decode a note event CBOR payload: {0: opCode, 1: noteId, 2: timestamp, 3?: encryptedContent}.
+ *
+ * Returns a JS object with `op_code`, `note_id`, `timestamp`, and optionally `encrypted_content` (Uint8Array).
+ */
+export function cbor_decode_note_event(payload: Uint8Array): any;
+
+/**
  * Encode a simple CBOR map: { key0: val0, key1: val1, ... }
  *
  * Takes parallel arrays of integer keys and integer values.
  * Returns CBOR-encoded bytes (compact mode).
  */
 export function cbor_encode_int_map(keys: Uint8Array, values: Uint32Array): Uint8Array;
+
+/**
+ * Encode a note event CBOR payload: {0: opCode, 1: noteId, 2: timestamp, 3?: encryptedContent}.
+ *
+ * Key 3 (encrypted content) is only included if `encrypted_content` is non-empty.
+ * This packs both metadata and content into a single R2-WIRE frame payload.
+ */
+export function cbor_encode_note_event(op_code: number, note_id: number, timestamp: number, encrypted_content: Uint8Array): Uint8Array;
 
 /**
  * Complete the join handshake (device side).
@@ -326,6 +341,15 @@ export function generate_device_keypair(): any;
 export function hmac_compact_tag(frame_bytes: Uint8Array, hk: Uint8Array): Uint8Array;
 
 /**
+ * Compute the HMAC tag for an extended R2-WIRE frame.
+ *
+ * `frame_bytes` must be a valid extended R2-WIRE frame (without HMAC).
+ * `hk` must be 32 bytes (the trust group's HMAC key).
+ * Returns the 32-byte HMAC-SHA256 tag.
+ */
+export function hmac_extended_tag(frame_bytes: Uint8Array, hk: Uint8Array): Uint8Array;
+
+/**
  * Hash an event name to a 32-bit FNV-1a identifier.
  *
  * Canonicalises the input (lowercase, whitespace-stripped) before hashing.
@@ -364,13 +388,23 @@ export function transcode_to_extended(compact_bytes: Uint8Array): Uint8Array;
  */
 export function verify_compact_hmac(signed_frame: Uint8Array, hk: Uint8Array): boolean;
 
+/**
+ * Verify an extended frame's HMAC tag.
+ *
+ * The frame must include the HMAC tag (has_hmac flag set).
+ * `hk` must be 32 bytes. Returns true if valid.
+ */
+export function verify_extended_hmac(signed_frame: Uint8Array, hk: Uint8Array): boolean;
+
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_r2member_free: (a: number, b: number) => void;
     readonly __wbg_r2trustgroup_free: (a: number, b: number) => void;
+    readonly cbor_decode_note_event: (a: number, b: number) => [number, number, number];
     readonly cbor_encode_int_map: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly cbor_encode_note_event: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly complete_join: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint) => [number, number, number];
     readonly compute_trust_group_hash: (a: number, b: number) => [number, number, number, number];
     readonly decode_compact_frame: (a: number, b: number) => [number, number, number];
@@ -391,6 +425,7 @@ export interface InitOutput {
     readonly frame_with_le_prefix: (a: number, b: number) => [number, number];
     readonly generate_device_keypair: () => [number, number, number];
     readonly hmac_compact_tag: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly hmac_extended_tag: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly r2_hash: (a: number, b: number) => [number, number, number];
     readonly r2_version: () => [number, number];
     readonly r2member_dek: (a: number) => [number, number];
@@ -416,6 +451,7 @@ export interface InitOutput {
     readonly transcode_to_compact: (a: number, b: number) => [number, number, number, number];
     readonly transcode_to_extended: (a: number, b: number) => [number, number, number, number];
     readonly verify_compact_hmac: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly verify_extended_hmac: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly __wbg_r2hive_free: (a: number, b: number) => void;
     readonly r2hive_drain_outbound: (a: number) => [number, number];
     readonly r2hive_new: () => number;

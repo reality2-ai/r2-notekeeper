@@ -394,12 +394,14 @@
             <div>
             <h1>Notekeeper</h1>
             <div class="header-meta">
-                <span id="app-tg-id"></span> &middot; <span id="app-device-name"></span>
+                <span id="app-tg-id"></span> &middot; <span id="app-device-name"></span> &middot; <span id="app-version" style="color:var(--text-faint)"></span>
             </div>
         </div></div>
         <div class="header-actions">
             <span id="relay-status" class="relay-text" style="font-size:10px;font-family:var(--mono);color:var(--text-faint)"></span>
-            <button class="btn btn-small btn-secondary" id="event-log-toggle" onclick="toggleEventLog()">Events</button>
+            <button class="btn btn-small btn-secondary" onclick="toggleTrustGroupPanel()" title="Trust Group">
+                <svg width="14" height="14" viewBox="0 0 512 512" fill="none" style="vertical-align:middle"><path d="M256 72L400 156V324L256 408L112 324V156Z" fill="none" stroke="currentColor" stroke-width="40" stroke-linejoin="round"/></svg>
+            </button>
             <button class="btn btn-small btn-secondary" onclick="toggleSettings()" id="settings-toggle">Settings</button>
         </div>
     </div>
@@ -469,6 +471,7 @@
 </div>
 
 <!-- Settings panel -->
+<!-- Settings panel (preferences) -->
 <div class="settings-backdrop" id="settings-backdrop" onclick="toggleSettings()"></div>
 <div class="settings-panel" id="settings-panel">
     <div class="settings-header">
@@ -476,22 +479,54 @@
         <button class="btn btn-small btn-secondary" onclick="toggleSettings()">Close</button>
     </div>
     <div class="settings-section">
-        <h3>Trust Group</h3>
+        <h3>Relay</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="settings-relay-input" class="field-input" placeholder="wss://relay.reality2.ai/r2"
+                   style="font-family:var(--mono);font-size:12px;padding:8px 12px;flex:1">
+            <button class="btn btn-small btn-primary" onclick="updateRelay()">Connect</button>
+        </div>
+        <div class="settings-row">
+            <span class="label">Status</span>
+            <span class="value" id="settings-relay-status">-</span>
+        </div>
+    </div>
+    <div class="settings-section">
+        <h3>Appearance</h3>
+        <div style="display:flex;gap:8px">
+            <button class="btn btn-small btn-secondary" onclick="setTheme('light')">Light</button>
+            <button class="btn btn-small btn-secondary" onclick="setTheme('dark')">Dark</button>
+            <button class="btn btn-small btn-secondary" onclick="setTheme('auto')">Auto</button>
+        </div>
+    </div>
+    <div class="settings-section">
+        <button class="btn btn-secondary btn-block" onclick="toggleSettings(); setTimeout(toggleEventLog, 300)" style="text-align:left;padding-left:16px">Event Log</button>
+    </div>
+</div>
+
+<!-- Trust Group panel -->
+<div class="settings-backdrop" id="tg-backdrop" onclick="toggleTrustGroupPanel()"></div>
+<div class="settings-panel" id="tg-panel">
+    <div class="settings-header">
+        <h2>Trust Group</h2>
+        <button class="btn btn-small btn-secondary" onclick="toggleTrustGroupPanel()">Close</button>
+    </div>
+    <div class="settings-section">
+        <h3>Identity</h3>
         <div class="settings-row">
             <span class="label">Group ID</span>
-            <span class="value" id="settings-tg-id">—</span>
+            <span class="value" id="settings-tg-id">-</span>
         </div>
         <div class="settings-row">
             <span class="label">Role</span>
-            <span class="value" id="settings-role">—</span>
+            <span class="value" id="settings-role">-</span>
         </div>
         <div class="settings-row">
             <span class="label">Device</span>
-            <span class="value" id="settings-device">—</span>
+            <span class="value" id="settings-device">-</span>
         </div>
         <div class="settings-row">
             <span class="label">Device ID</span>
-            <span class="value" id="settings-device-id">—</span>
+            <span class="value" id="settings-device-id">-</span>
         </div>
     </div>
     <div class="settings-section" id="settings-invite-section" style="display:none">
@@ -499,7 +534,7 @@
         <div id="settings-invite-member-note" style="display:none">
             <p style="font-size:12px;color:var(--text-dim);line-height:1.5">To add another device, generate an invitation on the device that created the trust group (the key holder). That device needs to be open and connected to the relay.</p>
         </div>
-        <p id="settings-invite-keyholder-text" style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Generate a code to add another device to this trust group. Valid for 5 minutes, single use.</p>
+        <p id="settings-invite-keyholder-text" style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Generate a code to add another device. Valid for 5 minutes, single use.</p>
         <div id="settings-invite-display" style="display:none">
             <div style="text-align:center;padding:16px 0 8px">
                 <div id="settings-word-code" style="font-family:var(--sans);font-size:26px;font-weight:600;color:var(--accent);user-select:all;cursor:pointer" onclick="copyWordCode()"></div>
@@ -519,30 +554,16 @@
         </div>
         <button class="btn btn-small btn-secondary" onclick="generateNewInvite()" style="margin-top:8px" id="settings-invite-btn">Generate Invitation</button>
     </div>
-    <div class="settings-section">
-        <h3>Relay</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-            <input id="settings-relay-input" class="field-input" placeholder="wss://relay.reality2.ai/r2"
-                   style="font-family:var(--mono);font-size:12px;padding:8px 12px;flex:1">
-            <button class="btn btn-small btn-primary" onclick="updateRelay()">Connect</button>
-        </div>
-        <div class="settings-row">
-            <span class="label">Status</span>
-            <span class="value" id="settings-relay-status">—</span>
-        </div>
-    </div>
     <div class="settings-section" id="settings-devices-section">
         <h3>Devices</h3>
-        <div id="settings-devices-list" style="margin-bottom:12px">
-            <div style="font-size:12px;color:var(--text-faint)">Open Settings to see devices</div>
-        </div>
+        <div id="settings-devices-list" style="margin-bottom:12px"></div>
     </div>
     <div class="settings-section" id="settings-key-section" style="display:none">
-        <h3>Trust Group Key</h3>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Back up your trust group key so you can restore it if all your devices are lost. Keep it somewhere safe — anyone with this key can create new invitations.</p>
+        <h3>Key Backup</h3>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Back up your trust group key. Anyone with this key can create new invitations.</p>
         <div id="settings-key-display" style="display:none;margin-bottom:12px">
             <div class="invite-code-display" id="settings-key-value" onclick="copyKey()" style="font-size:10px"></div>
-            <div style="font-size:10px;color:var(--text-faint);margin-top:4px">Click to copy. Store in a password manager or write it down.</div>
+            <div style="font-size:10px;color:var(--text-faint);margin-top:4px">Click to copy. Store in a password manager.</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-small btn-secondary" onclick="exportKey()">Export Key</button>
@@ -551,7 +572,7 @@
     </div>
     <div class="settings-section">
         <h3>Restore</h3>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Restore a trust group from a previously exported key.</p>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Restore from a previously exported key.</p>
         <div style="display:flex;gap:8px">
             <input id="settings-restore-input" class="field-input" placeholder="Paste key here" style="font-family:var(--mono);font-size:11px;padding:8px 12px;flex:1">
             <button class="btn btn-small btn-primary" onclick="restoreKey()">Restore</button>
@@ -559,16 +580,6 @@
         <div id="settings-restore-error" style="font-size:12px;color:var(--red);margin-top:8px;display:none"></div>
     </div>
     <div class="settings-section">
-        <h3>Appearance</h3>
-        <div style="display:flex;gap:8px">
-            <button class="btn btn-small btn-secondary" onclick="setTheme('light')">Light</button>
-            <button class="btn btn-small btn-secondary" onclick="setTheme('dark')">Dark</button>
-            <button class="btn btn-small btn-secondary" onclick="setTheme('auto')">Auto</button>
-        </div>
-    </div>
-    <div class="settings-section">
-        <h3>Actions</h3>
-        <button class="btn btn-secondary btn-block" onclick="toggleSettings(); setTimeout(toggleEventLog, 300)" style="margin-bottom:8px;text-align:left;padding-left:16px">View Event Log</button>
         <button class="btn btn-danger btn-block" onclick="resetState()" style="text-align:left;padding-left:16px">Leave Trust Group</button>
     </div>
 </div>
@@ -591,6 +602,21 @@ function generateQrSvg(text, size) {
 </script>
 <script type="module">
     import init, * as r2 from './pkg/r2_wasm.js';
+
+    // ── Version ──
+    const NK_VERSION = '0.2.0';
+
+    // ── CBOR helper: read unsigned integer from any major type ──
+    // majorHint: if provided, mask off that major type from the first byte
+    function readCborUint(buf, pos, majorHint) {
+        const b = buf[pos];
+        const additional = b & 0x1F;
+        if (additional < 24) return { val: additional, next: pos + 1 };
+        if (additional === 24) return { val: buf[pos + 1], next: pos + 2 };
+        if (additional === 25) return { val: (buf[pos + 1] << 8) | buf[pos + 2], next: pos + 3 };
+        if (additional === 26) return { val: ((buf[pos + 1] << 24) | (buf[pos + 2] << 16) | (buf[pos + 3] << 8) | buf[pos + 4]) >>> 0, next: pos + 5 };
+        return { val: 0, next: pos + 1 }; // 8-byte not supported for our use
+    }
 
     // ── State ──
     let trustGroup = null;
@@ -818,76 +844,57 @@ function generateQrSvg(text, size) {
     function saveEvents() { localStorage.setItem(eventsKey(), JSON.stringify(events)); }
     function loadEvents() { try { events = JSON.parse(localStorage.getItem(eventsKey()) || '[]'); } catch { events = []; } }
 
-    // ── R2 Event Emission ──
+    // ── R2 Event Emission (Extended R2-WIRE frames) ──
     function emitNoteEvent(opCode, noteId) {
         const noteIdU32 = parseInt(noteId, 16);
         const ts = nowNum();
         const eventNames = ['note.create', 'note.update', 'note.delete'];
         const hashes = [HASH_CREATE, HASH_UPDATE, HASH_DELETE];
-        const payload = r2.cbor_encode_int_map(new Uint8Array([0, 1, 2]), new Uint32Array([opCode, noteIdU32, ts]));
-        const msgId = randomU16();
-        const frame = r2.encode_compact_frame(0, 5, 3, msgId, hashes[opCode], 0, payload);
-        const tag = r2.hmac_compact_tag(frame, new Uint8Array(member.hk));
+
+        // Encrypt note content into the payload (for create/update)
+        let encryptedContent = new Uint8Array(0);
+        if ((opCode === 0 || opCode === 1) && member) {
+            const note = notes[noteId];
+            if (note) {
+                const contentJson = JSON.stringify({ title: note.title, content: note.content });
+                const plaintext = new TextEncoder().encode(contentJson);
+                encryptedContent = r2.encrypt_with_dek(new Uint8Array(member.dek), plaintext);
+            }
+        }
+
+        // CBOR payload: {0: opCode, 1: noteId, 2: timestamp, 3?: encryptedContent}
+        const payload = r2.cbor_encode_note_event(opCode, noteIdU32, ts, encryptedContent);
+
+        // Extended R2-WIRE frame (Internet transport = Extended format)
+        // trust_group_id is a Uint8Array (8 bytes). target_group is u32 from first 4 bytes.
+        const tgBytes = member ? member.trust_group_id : new Uint8Array(8);
+        const tgGroup = (tgBytes[0] << 24 | tgBytes[1] << 16 | tgBytes[2] << 8 | tgBytes[3]) >>> 0;
+        const msgId = randomU32();
+        const frame = r2.encode_extended_frame(0, 5, 3, msgId, hashes[opCode], tgGroup, 0, payload);
+        const tag = r2.hmac_extended_tag(frame, new Uint8Array(member.hk));
         const signedFrame = new Uint8Array(frame.length + tag.length);
         signedFrame.set(frame);
         signedFrame.set(tag, frame.length);
 
         if (relay && relay.connected) {
             relay.send(signedFrame);
-            if (opCode === 0 || opCode === 1) {
-                const note = notes[noteId];
-                if (note) sendPluginData(noteId, note.title, note.content, ts);
-            }
         }
 
-        const evt = { ts, op: eventNames[opCode], note_id: noteId, msg_id: msgId, frame_hex: hex(frame), hmac_hex: hex(tag) };
+        const evt = { ts, op: eventNames[opCode], note_id: noteId, msg_id: msgId,
+            frame_hex: hex(frame).substring(0, 44) + '..', hmac_hex: hex(tag).substring(0, 16) + '..' };
         events.unshift(evt);
         saveEvents();
         renderEventLog();
         return evt;
     }
 
-    // ── Plugin: Encrypted Note Content ──
-    const PLUGIN_DATA = 0xFE;
-    function isPluginData(data) { return data.length > 1 && data[0] === PLUGIN_DATA; }
+    function randomU32() { return (Math.random() * 0xFFFFFFFF) >>> 0; }
 
-    function sendPluginData(noteId, title, content, ts) {
-        if (!relay || !relay.connected || !member) return;
-        const payload = JSON.stringify({ note_id: noteId, title, content, ts });
-        const plaintext = new TextEncoder().encode(payload);
-        const encrypted = r2.encrypt_with_dek(new Uint8Array(member.dek), plaintext);
-        const msg = new Uint8Array(1 + encrypted.length);
-        msg[0] = PLUGIN_DATA;
-        msg.set(encrypted, 1);
-        relay.send(msg);
-    }
-
-    function handlePluginData(data) {
-        if (!member) return;
-        try {
-            const encrypted = data.slice(1);
-            const plaintext = r2.decrypt_with_dek(new Uint8Array(member.dek), encrypted);
-            const json = new TextDecoder().decode(plaintext);
-            const { note_id, title, content, ts } = JSON.parse(json);
-            if (!notes[note_id]) {
-                notes[note_id] = { id: note_id, title, content, created_at: ts, updated_at: ts, deleted: false };
-            } else {
-                if (ts >= notes[note_id].updated_at) {
-                    notes[note_id].title = title;
-                    notes[note_id].content = content;
-                    notes[note_id].updated_at = ts;
-                }
-            }
-            saveNotes();
-            renderNoteList();
-            if (currentNoteId === note_id) renderEditor();
-        } catch (e) { console.warn('Plugin data decrypt failed:', e); }
-    }
-
-    // ── Incoming Frame Handler ──
+    // ── Incoming Frame Handler (Extended R2-WIRE) ──
     function handleIncomingFrame(frameBytes) {
         try {
-            const decoded = r2.decode_compact_frame(frameBytes.slice(0, frameBytes.length - 8));
+            // Decode as extended R2-WIRE frame (strip 32-byte HMAC tag)
+            const decoded = r2.decode_extended_frame(frameBytes.slice(0, frameBytes.length - 32));
             if (!decoded) return;
             let opName = 'unknown', opCode = -1;
             if (decoded.event_hash === HASH_CREATE) { opName = 'note.create'; opCode = 0; }
@@ -895,30 +902,36 @@ function generateQrSvg(text, size) {
             else if (decoded.event_hash === HASH_DELETE) { opName = 'note.delete'; opCode = 2; }
             else return;
 
-            const payload = decoded.payload;
-            if (payload.length < 3) return;
-            let noteIdU32 = 0, ts = 0, pos = 1;
-            for (let i = 0; i < 3; i++) {
-                const key = payload[pos++];
-                let val = 0;
-                if (payload[pos] < 24) { val = payload[pos++]; }
-                else if (payload[pos] === 0x18) { pos++; val = payload[pos++]; }
-                else if (payload[pos] === 0x19) { pos++; val = (payload[pos] << 8) | payload[pos+1]; pos += 2; }
-                else if (payload[pos] === 0x1a) { pos++; val = (payload[pos] << 24) | (payload[pos+1] << 16) | (payload[pos+2] << 8) | payload[pos+3]; pos += 4; }
-                if (key === 1) noteIdU32 = val >>> 0;
-                if (key === 2) ts = val >>> 0;
-            }
-            const noteId = noteIdU32.toString(16).padStart(8, '0');
+            // Decode CBOR payload via WASM: {op_code, note_id, timestamp, encrypted_content?}
+            const evt = r2.cbor_decode_note_event(new Uint8Array(decoded.payload));
+            if (!evt) return;
+            const noteId = evt.note_id.toString(16).padStart(8, '0');
+            const ts = evt.timestamp;
 
             events.unshift({ ts: ts || nowNum(), op: opName + ' (remote)', note_id: noteId, msg_id: decoded.msg_id,
-                frame_hex: hex(frameBytes).substring(0, 32) + '..', hmac_hex: hex(frameBytes.slice(frameBytes.length - 8)) });
+                frame_hex: hex(frameBytes).substring(0, 44) + '..', hmac_hex: hex(frameBytes.slice(frameBytes.length - 32, frameBytes.length - 16)) + '..' });
             saveEvents(); renderEventLog();
 
             if (opCode === 0 || opCode === 1) {
-                if (!notes[noteId]) {
-                    notes[noteId] = { id: noteId, title: '(syncing...)', content: '', created_at: ts, updated_at: ts, deleted: false };
-                    saveNotes(); renderNoteList();
+                // Decrypt note content from payload
+                let title = '(syncing...)', content = '';
+                if (evt.encrypted_content && member) {
+                    try {
+                        const plaintext = r2.decrypt_with_dek(new Uint8Array(member.dek), new Uint8Array(evt.encrypted_content));
+                        const json = JSON.parse(new TextDecoder().decode(plaintext));
+                        title = json.title || title;
+                        content = json.content || content;
+                    } catch (e) { console.warn('Content decrypt failed:', e); }
                 }
+                if (!notes[noteId]) {
+                    notes[noteId] = { id: noteId, title, content, created_at: ts, updated_at: ts, deleted: false };
+                } else if (ts >= notes[noteId].updated_at) {
+                    notes[noteId].title = title;
+                    notes[noteId].content = content;
+                    notes[noteId].updated_at = ts;
+                }
+                saveNotes(); renderNoteList();
+                if (currentNoteId === noteId) renderEditor();
             } else if (opCode === 2) {
                 if (notes[noteId]) {
                     notes[noteId].deleted = true; notes[noteId].updated_at = ts;
@@ -1506,29 +1519,39 @@ function generateQrSvg(text, size) {
         } else {
             panel.classList.add('open');
             backdrop.classList.add('open');
-            // Populate settings
+            document.getElementById('settings-relay-input').value = localStorage.getItem(SK_RELAY_URL) || '';
+            document.getElementById('settings-relay-status').textContent = relay && relay.connected ? 'connected' : (localStorage.getItem(SK_RELAY_URL) ? 'disconnected' : 'not configured');
+        }
+    };
+    window.toggleTrustGroupPanel = function() {
+        const panel = document.getElementById('tg-panel');
+        const backdrop = document.getElementById('tg-backdrop');
+        const isOpen = panel.classList.contains('open');
+        if (isOpen) {
+            panel.classList.remove('open');
+            backdrop.classList.remove('open');
+        } else {
+            panel.classList.add('open');
+            backdrop.classList.add('open');
+            // Identity
             document.getElementById('settings-tg-id').textContent = tgShort;
             document.getElementById('settings-role').textContent = isKeyHolder ? 'Key Holder' : 'Member';
             document.getElementById('settings-device').textContent = localStorage.getItem(SK_DEVICE_NAME) || 'device';
             document.getElementById('settings-device-id').textContent = member ? hexShort(member.public_key) : '—';
-            document.getElementById('settings-relay-input').value = localStorage.getItem(SK_RELAY_URL) || '';
-            document.getElementById('settings-relay-status').textContent = relay && relay.connected ? 'connected' : (localStorage.getItem(SK_RELAY_URL) ? 'disconnected' : 'not configured');
-            // Show invite section for key holders
+            // Invitation section
             if (isKeyHolder) {
                 document.getElementById('settings-invite-section').style.display = 'block';
                 document.getElementById('settings-invite-keyholder-text').style.display = 'block';
                 document.getElementById('settings-invite-member-note').style.display = 'none';
                 document.getElementById('settings-key-section').style.display = 'block';
             } else {
-                // Member (not key holder) — show invitation section with explanation
                 document.getElementById('settings-invite-section').style.display = 'block';
                 document.getElementById('settings-invite-keyholder-text').style.display = 'none';
                 document.getElementById('settings-invite-member-note').style.display = 'block';
                 document.getElementById('settings-invite-btn').style.display = 'none';
                 document.getElementById('settings-invite-display').style.display = 'none';
             }
-
-            // Device list - show self + known members
+            // Device list
             const listEl = document.getElementById('settings-devices-list');
             const selfName = localStorage.getItem(SK_DEVICE_NAME) || 'this device';
             let deviceHtml = `<div class="settings-row">
@@ -1753,7 +1776,6 @@ function generateQrSvg(text, size) {
             relay = new R2RelayTransport(url, member);
             relay.onFrame = (data) => {
                 if (isJoinMessage(data)) handleJoinMessage(data);
-                else if (isPluginData(data)) handlePluginData(data);
                 else handleIncomingFrame(data);
             };
             relay.connect();
@@ -1777,6 +1799,7 @@ function generateQrSvg(text, size) {
         document.getElementById('app-screen').style.display = 'block';
         document.getElementById('app-tg-id').textContent = tgShort;
         document.getElementById('app-device-name').textContent = localStorage.getItem(SK_DEVICE_NAME) || 'device';
+        document.getElementById('app-version').textContent = 'v' + NK_VERSION;
         loadNotes(); loadEvents();
         renderNoteList(); renderEditor(); renderEventLog();
         const relayUrl = localStorage.getItem(SK_RELAY_URL);
@@ -1784,7 +1807,6 @@ function generateQrSvg(text, size) {
             relay = new R2RelayTransport(relayUrl, member);
             relay.onFrame = (data) => {
                 if (isJoinMessage(data)) handleJoinMessage(data);
-                else if (isPluginData(data)) handlePluginData(data);
                 else handleIncomingFrame(data);
             };
             relay.connect();

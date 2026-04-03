@@ -395,6 +395,23 @@ export class R2TrustGroup {
 if (Symbol.dispose) R2TrustGroup.prototype[Symbol.dispose] = R2TrustGroup.prototype.free;
 
 /**
+ * Decode a note event CBOR payload: {0: opCode, 1: noteId, 2: timestamp, 3?: encryptedContent}.
+ *
+ * Returns a JS object with `op_code`, `note_id`, `timestamp`, and optionally `encrypted_content` (Uint8Array).
+ * @param {Uint8Array} payload
+ * @returns {any}
+ */
+export function cbor_decode_note_event(payload) {
+    const ptr0 = passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.cbor_decode_note_event(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
  * Encode a simple CBOR map: { key0: val0, key1: val1, ... }
  *
  * Takes parallel arrays of integer keys and integer values.
@@ -415,6 +432,29 @@ export function cbor_encode_int_map(keys, values) {
     var v3 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v3;
+}
+
+/**
+ * Encode a note event CBOR payload: {0: opCode, 1: noteId, 2: timestamp, 3?: encryptedContent}.
+ *
+ * Key 3 (encrypted content) is only included if `encrypted_content` is non-empty.
+ * This packs both metadata and content into a single R2-WIRE frame payload.
+ * @param {number} op_code
+ * @param {number} note_id
+ * @param {number} timestamp
+ * @param {Uint8Array} encrypted_content
+ * @returns {Uint8Array}
+ */
+export function cbor_encode_note_event(op_code, note_id, timestamp, encrypted_content) {
+    const ptr0 = passArray8ToWasm0(encrypted_content, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.cbor_encode_note_event(op_code, note_id, timestamp, ptr0, len0);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v2;
 }
 
 /**
@@ -856,6 +896,30 @@ export function hmac_compact_tag(frame_bytes, hk) {
 }
 
 /**
+ * Compute the HMAC tag for an extended R2-WIRE frame.
+ *
+ * `frame_bytes` must be a valid extended R2-WIRE frame (without HMAC).
+ * `hk` must be 32 bytes (the trust group's HMAC key).
+ * Returns the 32-byte HMAC-SHA256 tag.
+ * @param {Uint8Array} frame_bytes
+ * @param {Uint8Array} hk
+ * @returns {Uint8Array}
+ */
+export function hmac_extended_tag(frame_bytes, hk) {
+    const ptr0 = passArray8ToWasm0(frame_bytes, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray8ToWasm0(hk, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.hmac_extended_tag(ptr0, len0, ptr1, len1);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v3 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v3;
+}
+
+/**
  * Hash an event name to a 32-bit FNV-1a identifier.
  *
  * Canonicalises the input (lowercase, whitespace-stripped) before hashing.
@@ -962,6 +1026,27 @@ export function verify_compact_hmac(signed_frame, hk) {
     const ptr1 = passArray8ToWasm0(hk, wasm.__wbindgen_malloc);
     const len1 = WASM_VECTOR_LEN;
     const ret = wasm.verify_compact_hmac(ptr0, len0, ptr1, len1);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0] !== 0;
+}
+
+/**
+ * Verify an extended frame's HMAC tag.
+ *
+ * The frame must include the HMAC tag (has_hmac flag set).
+ * `hk` must be 32 bytes. Returns true if valid.
+ * @param {Uint8Array} signed_frame
+ * @param {Uint8Array} hk
+ * @returns {boolean}
+ */
+export function verify_extended_hmac(signed_frame, hk) {
+    const ptr0 = passArray8ToWasm0(signed_frame, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray8ToWasm0(hk, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.verify_extended_hmac(ptr0, len0, ptr1, len1);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
