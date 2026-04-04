@@ -1096,11 +1096,45 @@ function generateQrSvg(text, size) {
         return htmlToMarkdown(document.getElementById('editor-visual').innerHTML);
     }
 
-    // ── Formatting Commands (WYSIWYG) ──
-    window.fmt = function(type) {
-        // Switch to visual mode if in markdown
-        if (editorMode !== 'visual') setEditorMode('visual');
+    // ── Formatting Commands ──
+    function insertAtCursor(textarea, text) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const before = textarea.value.substring(0, start);
+        const selected = textarea.value.substring(start, end);
+        const after = textarea.value.substring(end);
+        textarea.value = before + text.replace('$SEL', selected) + after;
+        const newPos = before.length + text.replace('$SEL', selected).length;
+        textarea.selectionStart = textarea.selectionEnd = newPos;
+        textarea.focus();
+    }
 
+    window.fmt = function(type) {
+        if (editorMode === 'markdown') {
+            // Insert markdown syntax at cursor in textarea
+            const ta = document.getElementById('editor-content');
+            const sel = ta.value.substring(ta.selectionStart, ta.selectionEnd);
+            switch (type) {
+                case 'paragraph': break; // no-op in markdown
+                case 'heading': insertAtCursor(ta, '## ' + (sel || '')); break;
+                case 'bold': insertAtCursor(ta, '**' + (sel || 'text') + '**'); break;
+                case 'italic': insertAtCursor(ta, '*' + (sel || 'text') + '*'); break;
+                case 'code': insertAtCursor(ta, '`' + (sel || 'code') + '`'); break;
+                case 'codeblock': insertAtCursor(ta, '```\n' + (sel || '') + '\n```'); break;
+                case 'ul': insertAtCursor(ta, '- ' + (sel || 'item')); break;
+                case 'ol': insertAtCursor(ta, '1. ' + (sel || 'item')); break;
+                case 'quote': insertAtCursor(ta, '> ' + (sel || 'quote')); break;
+                case 'hr': insertAtCursor(ta, '\n---\n'); break;
+                case 'link':
+                    const mdUrl = prompt('URL:');
+                    if (mdUrl) insertAtCursor(ta, '[' + (sel || 'link text') + '](' + mdUrl + ')');
+                    break;
+            }
+            markDirty();
+            return;
+        }
+
+        // Visual mode: use execCommand
         const visual = document.getElementById('editor-visual');
         visual.focus();
 
@@ -1118,10 +1152,9 @@ function generateQrSvg(text, size) {
                 document.execCommand('italic');
                 break;
             case 'code':
-                // Wrap selection in <code>
-                const sel = window.getSelection();
-                if (sel.rangeCount) {
-                    const range = sel.getRangeAt(0);
+                const cSel = window.getSelection();
+                if (cSel.rangeCount) {
+                    const range = cSel.getRangeAt(0);
                     const code = document.createElement('code');
                     range.surroundContents(code);
                 }
