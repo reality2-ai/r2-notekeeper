@@ -432,6 +432,7 @@
                 </div>
                 <input class="editor-title" id="editor-title" placeholder="Untitled">
                 <div class="fmt-bar" id="fmt-bar">
+                    <button class="fmt-btn" onclick="fmt('paragraph')" title="Normal text">P</button>
                     <button class="fmt-btn" onclick="fmt('heading')" title="Heading">H</button>
                     <button class="fmt-btn" onclick="fmt('bold')" title="Bold"><strong>B</strong></button>
                     <button class="fmt-btn" onclick="fmt('italic')" title="Italic"><em>I</em></button>
@@ -1104,6 +1105,9 @@ function generateQrSvg(text, size) {
         visual.focus();
 
         switch (type) {
+            case 'paragraph':
+                document.execCommand('formatBlock', false, 'p');
+                break;
             case 'heading':
                 document.execCommand('formatBlock', false, 'h2');
                 break;
