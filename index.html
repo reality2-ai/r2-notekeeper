@@ -241,7 +241,7 @@
         .editor-preview pre code { font-family: var(--mono); font-size: 13px; color: var(--text); }
         .editor-preview strong { color: var(--text); font-weight: 600; }
         .editor-preview em { color: var(--text-dim); font-style: italic; }
-        .editor-preview code { font-family: var(--mono); font-size: 13px; background: var(--surface2); padding: 2px 6px; border-radius: 4px; color: var(--accent); }
+        .editor-preview code { font-family: var(--mono); font-size: 13px; background: var(--surface2); padding: 2px 6px; border-radius: 4px; color: var(--accent); min-width: 1em; display: inline-block; }
         .editor-preview a { color: var(--accent); text-decoration: none; }
         .editor-preview a:hover { text-decoration: underline; }
         .editor-preview[contenteditable]:empty::before {
@@ -1000,7 +1000,7 @@ function generateQrSvg(text, size) {
 
     function renderInline(text) {
         let h = escHtml(text);
-        h = h.replace(/`([^`]*)`/g, (_, c) => '<code>' + (c || '\u200B') + '</code>');
+        h = h.replace(/`([^`]*)`/g, '<code>$1</code>');
         h = h.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
         h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
