@@ -1104,51 +1104,51 @@ function generateQrSvg(text, size) {
 
     // Build a map from visual character index → markdown character index
     // for the content part of a line (after the prefix).
+    // Build visual↔markdown position map for inline formatting.
+    // Only activates for lines that actually contain formatting markers.
+    // For plain text, returns null (use identity mapping).
     function buildPosMap(content) {
-        const v2m = []; // v2m[visualIndex] = markdownIndex
+        // Quick check: does this content have any formatting markers?
+        if (!/[`*\[]/.test(content)) return null; // no formatting, identity map
+
+        const v2m = [];
         let vi = 0, mi = 0;
         while (mi < content.length) {
             if (content[mi] === '`') {
-                mi++; // skip opening `
-                while (mi < content.length && content[mi] !== '`') {
-                    v2m[vi++] = mi++;
-                }
-                if (mi < content.length) mi++; // skip closing `
-            } else if (content.slice(mi, mi + 3) === '***') {
-                mi += 3;
-                while (mi < content.length && content.slice(mi, mi + 3) !== '***') {
-                    v2m[vi++] = mi++;
-                }
-                if (mi < content.length) mi += 3;
+                const close = content.indexOf('`', mi + 1);
+                if (close === -1) { v2m[vi++] = mi++; continue; } // unpaired, treat as literal
+                mi++; // skip opening
+                while (mi < close) { v2m[vi++] = mi++; }
+                mi++; // skip closing
             } else if (content.slice(mi, mi + 2) === '**') {
+                const close = content.indexOf('**', mi + 2);
+                if (close === -1) { v2m[vi++] = mi++; v2m[vi++] = mi++; continue; }
                 mi += 2;
-                while (mi < content.length && content.slice(mi, mi + 2) !== '**') {
-                    v2m[vi++] = mi++;
-                }
-                if (mi < content.length) mi += 2;
-            } else if (content[mi] === '*' && mi + 1 < content.length && content[mi + 1] !== ' ') {
+                while (mi < close) { v2m[vi++] = mi++; }
+                mi += 2;
+            } else if (content[mi] === '*' && content[mi + 1] !== '*' && content[mi + 1] !== ' ') {
+                const close = content.indexOf('*', mi + 1);
+                if (close === -1) { v2m[vi++] = mi++; continue; }
                 mi++;
-                while (mi < content.length && content[mi] !== '*') {
-                    v2m[vi++] = mi++;
-                }
-                if (mi < content.length) mi++;
+                while (mi < close) { v2m[vi++] = mi++; }
+                mi++;
             } else if (content[mi] === '[') {
-                // Link: [text](url) - visual shows "text" only
                 const closeBracket = content.indexOf('](', mi);
                 if (closeBracket !== -1) {
-                    mi++; // skip [
-                    while (mi < closeBracket) { v2m[vi++] = mi++; }
-                    // skip ](url)
-                    const closeParen = content.indexOf(')', mi);
-                    mi = closeParen !== -1 ? closeParen + 1 : mi + 1;
-                } else {
-                    v2m[vi++] = mi++;
+                    const closeParen = content.indexOf(')', closeBracket + 2);
+                    if (closeParen !== -1) {
+                        mi++; // skip [
+                        while (mi < closeBracket) { v2m[vi++] = mi++; }
+                        mi = closeParen + 1; // skip ](url)
+                        continue;
+                    }
                 }
+                v2m[vi++] = mi++;
             } else {
                 v2m[vi++] = mi++;
             }
         }
-        v2m[vi] = mi; // end position
+        v2m[vi] = mi;
         return v2m;
     }
 
@@ -1173,7 +1173,9 @@ function generateQrSvg(text, size) {
         const charInVisual = range.toString().length;
 
         const v2m = buildPosMap(content);
-        const mdChar = charInVisual < v2m.length ? v2m[charInVisual] : content.length;
+        const mdChar = v2m
+            ? (charInVisual < v2m.length ? v2m[charInVisual] : content.length)
+            : charInVisual; // null map = identity (plain text)
 
         return lineOffset + prefix.length + mdChar;
     }
@@ -1190,9 +1192,14 @@ function generateQrSvg(text, size) {
 
                 // Reverse map: markdown position → visual position
                 const v2m = buildPosMap(content);
-                let visualChar = v2m.length - 1; // default: end
-                for (let v = 0; v < v2m.length; v++) {
-                    if (v2m[v] >= mdCharInContent) { visualChar = v; break; }
+                let visualChar;
+                if (!v2m) {
+                    visualChar = mdCharInContent; // identity for plain text
+                } else {
+                    visualChar = v2m.length - 1;
+                    for (let v = 0; v < v2m.length; v++) {
+                        if (v2m[v] >= mdCharInContent) { visualChar = v; break; }
+                    }
                 }
                 const el = container.querySelector('[data-line="' + i + '"]');
                 if (!el) return;
