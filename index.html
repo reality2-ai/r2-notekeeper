@@ -1056,7 +1056,8 @@ function generateQrSvg(text, size) {
                 case 'input': return ''; // checkbox handled by parent div
                 case 'hr': return `---\n\n`;
                 case 'br': return '\n';
-                case 'div': {
+                case 'div':
+                case 'p': {
                     const cb = node.querySelector(':scope > input[type="checkbox"]');
                     const span = node.querySelector(':scope > span');
                     if (cb && span) {
@@ -1064,7 +1065,6 @@ function generateQrSvg(text, size) {
                     }
                     return `\n${inner()}`;
                 }
-                case 'p': return `${inner()}\n\n`;
                 default: return inner();
             }
         }
