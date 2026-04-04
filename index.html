@@ -1070,21 +1070,64 @@ function generateQrSvg(text, size) {
         const mdBtn = document.getElementById('mode-markdown');
 
         if (mode === 'markdown') {
+            // Remember cursor as plain text offset
+            let visualOffset = 0;
+            try {
+                const sel = window.getSelection();
+                if (sel.rangeCount && visual.contains(sel.anchorNode)) {
+                    const range = document.createRange();
+                    range.setStart(visual, 0);
+                    range.setEnd(sel.anchorNode, sel.anchorOffset);
+                    visualOffset = range.toString().length;
+                }
+            } catch (e) {}
             // Sync visual → markdown
             textarea.value = htmlToMarkdown(visual.innerHTML);
             visual.style.display = 'none';
             textarea.style.display = 'block';
             visualBtn.classList.remove('active');
             mdBtn.classList.add('active');
+            // Restore cursor to approximate position in markdown
+            const mdText = textarea.value.replace(/[#*`>\-\[\]\(\)]/g, '').replace(/\n/g, ' ');
+            let mdPos = 0, textPos = 0;
+            while (textPos < visualOffset && mdPos < textarea.value.length) {
+                if (/[#*`>\-\[\]\(\)\n]/.test(textarea.value[mdPos])) { mdPos++; }
+                else { mdPos++; textPos++; }
+            }
+            textarea.selectionStart = textarea.selectionEnd = mdPos;
             textarea.focus();
         } else {
+            // Remember cursor offset as plain text position
+            const cursorOffset = textarea.value.substring(0, textarea.selectionStart)
+                .replace(/[#*`>\-\[\]\(\)]/g, '').replace(/\n/g, ' ').length;
             // Sync markdown → visual
             visual.innerHTML = renderMarkdown(textarea.value);
             textarea.style.display = 'none';
             visual.style.display = 'block';
             visualBtn.classList.add('active');
             mdBtn.classList.remove('active');
+            // Restore cursor to approximate position
             visual.focus();
+            try {
+                const walker = document.createTreeWalker(visual, NodeFilter.SHOW_TEXT);
+                let charCount = 0, node, targetNode = null, targetOffset = 0;
+                while (node = walker.nextNode()) {
+                    if (charCount + node.length >= cursorOffset) {
+                        targetNode = node;
+                        targetOffset = cursorOffset - charCount;
+                        break;
+                    }
+                    charCount += node.length;
+                }
+                if (targetNode) {
+                    const sel = window.getSelection();
+                    const range = document.createRange();
+                    range.setStart(targetNode, Math.min(targetOffset, targetNode.length));
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            } catch (e) { /* cursor placement is best-effort */ }
         }
     };
 
