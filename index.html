@@ -402,7 +402,9 @@
             <button class="btn btn-small btn-secondary" onclick="toggleTrustGroupPanel()" title="Trust Group">
                 <svg width="14" height="14" viewBox="0 0 512 512" fill="none" style="vertical-align:middle"><path d="M256 72L400 156V324L256 408L112 324V156Z" fill="none" stroke="currentColor" stroke-width="40" stroke-linejoin="round"/></svg>
             </button>
-            <button class="btn btn-small btn-secondary" onclick="toggleSettings()" id="settings-toggle">Settings</button>
+            <button class="btn btn-small btn-secondary" onclick="toggleSettings()" id="settings-toggle" title="Settings">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
         </div>
     </div>
     <div class="app-body">
@@ -427,7 +429,7 @@
                         <span id="sync-indicator" class="sync-status" style="color:var(--text-faint)"></span>
                         <button class="btn btn-small btn-primary" onclick="saveNote()" id="sync-btn">Sync</button>
                         <button class="btn btn-small btn-danger" onclick="deleteCurrentNote()">Delete</button>
-                        <button class="btn btn-small btn-secondary" onclick="closeEditor()">Close</button>
+                        <button class="btn btn-small btn-secondary" onclick="closeEditor()" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                     </div>
                 </div>
                 <input class="editor-title" id="editor-title" placeholder="Untitled">
@@ -465,7 +467,7 @@
         <span>Event Log</span>
         <div style="display:flex;align-items:center;gap:12px">
             <span id="event-count" style="text-transform:none;letter-spacing:0">0</span>
-            <button class="btn btn-small btn-secondary" onclick="toggleEventLog()">Close</button>
+            <button class="btn btn-small btn-secondary" onclick="toggleEventLog()" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
     </div>
     <div id="event-entries"></div>
@@ -477,7 +479,7 @@
 <div class="settings-panel" id="settings-panel">
     <div class="settings-header">
         <h2>Settings</h2>
-        <button class="btn btn-small btn-secondary" onclick="toggleSettings()">Close</button>
+        <button class="btn btn-small btn-secondary" onclick="toggleSettings()" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="settings-section">
         <h3>Relay</h3>
@@ -509,7 +511,7 @@
 <div class="settings-panel" id="tg-panel">
     <div class="settings-header">
         <h2>Trust Group</h2>
-        <button class="btn btn-small btn-secondary" onclick="toggleTrustGroupPanel()">Close</button>
+        <button class="btn btn-small btn-secondary" onclick="toggleTrustGroupPanel()" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="settings-section">
         <h3>Identity</h3>
