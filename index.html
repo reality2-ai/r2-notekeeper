@@ -1064,7 +1064,7 @@ function generateQrSvg(text, size) {
                 case 'input': return ''; // handled by label
                 case 'hr': return `---\n\n`;
                 case 'br': return '\n';
-                case 'div': return `${inner()}\n`;
+                case 'div': return `\n${inner()}`;
                 case 'p': return `${inner()}\n\n`;
                 default: return inner();
             }
