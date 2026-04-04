@@ -1049,34 +1049,34 @@ function generateQrSvg(text, size) {
             el.setAttribute('data-line', i);
             el.setAttribute('data-offset', offset);
 
-            if (line.match(/^### (.+)/)) {
+            if (line.match(/^### /)) {
                 el.innerHTML = renderInline(line.slice(4));
                 el.className = 'md-h3';
-            } else if (line.match(/^## (.+)/)) {
+            } else if (line.match(/^## /)) {
                 el.innerHTML = renderInline(line.slice(3));
                 el.className = 'md-h2';
-            } else if (line.match(/^# (.+)/)) {
+            } else if (line.match(/^# /)) {
                 el.innerHTML = renderInline(line.slice(2));
                 el.className = 'md-h1';
             } else if (line === '---') {
                 el.innerHTML = '<hr>';
                 el.className = 'md-hr';
-            } else if (line.match(/^> (.+)/)) {
+            } else if (line.match(/^> /)) {
                 el.innerHTML = renderInline(line.slice(2));
                 el.className = 'md-quote';
-            } else if (line.match(/^- \[x\] (.+)/)) {
+            } else if (line.match(/^- \[x\] /)) {
                 const text = line.slice(6);
                 el.className = 'md-checkbox';
                 el.innerHTML = '<input type="checkbox" checked class="md-cb"><span class="md-cb-text md-cb-done">' + renderInline(text) + '</span>';
-            } else if (line.match(/^- \[ \] (.+)/)) {
+            } else if (line.match(/^- \[ \] /)) {
                 const text = line.slice(6);
                 el.className = 'md-checkbox';
                 el.innerHTML = '<input type="checkbox" class="md-cb"><span class="md-cb-text">' + renderInline(text) + '</span>';
-            } else if (line.match(/^[-*] (.+)/)) {
+            } else if (line.match(/^[-*] /)) {
                 el.innerHTML = renderInline(line.slice(2));
                 el.className = 'md-li';
-            } else if (line.match(/^\d+\. (.+)/)) {
-                const m = line.match(/^(\d+)\. (.+)/);
+            } else if (line.match(/^\d+\. /)) {
+                const m = line.match(/^(\d+)\. (.*)/);
                 el.innerHTML = renderInline(m[2]);
                 el.className = 'md-ol';
                 el.setAttribute('data-num', m[1]);
@@ -1375,17 +1375,17 @@ function generateQrSvg(text, size) {
             }
             case 'bold': {
                 if (selEnd > pos) { md = md.slice(0, pos) + '**' + selText + '**' + md.slice(selEnd); newPos = selEnd + 4; }
-                else { md = md.slice(0, pos) + '**text**' + md.slice(pos); newPos = pos + 2; }
+                else { md = md.slice(0, pos) + '****' + md.slice(pos); newPos = pos + 2; }
                 apply(); break;
             }
             case 'italic': {
                 if (selEnd > pos) { md = md.slice(0, pos) + '*' + selText + '*' + md.slice(selEnd); newPos = selEnd + 2; }
-                else { md = md.slice(0, pos) + '*text*' + md.slice(pos); newPos = pos + 1; }
+                else { md = md.slice(0, pos) + '**' + md.slice(pos); newPos = pos + 1; }
                 apply(); break;
             }
             case 'code': {
                 if (selEnd > pos) { md = md.slice(0, pos) + '`' + selText + '`' + md.slice(selEnd); newPos = selEnd + 2; }
-                else { md = md.slice(0, pos) + '`code`' + md.slice(pos); newPos = pos + 1; }
+                else { md = md.slice(0, pos) + '``' + md.slice(pos); newPos = pos + 1; }
                 apply(); break;
             }
             case 'codeblock': {
