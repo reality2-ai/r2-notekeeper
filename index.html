@@ -604,7 +604,7 @@ function generateQrSvg(text, size) {
     import init, * as r2 from './pkg/r2_wasm.js';
 
     // ── Version ──
-    const NK_VERSION = '0.2.0';
+    const NK_VERSION = '0.2.1';
 
     // ── CBOR helper: read unsigned integer from any major type ──
     // majorHint: if provided, mask off that major type from the first byte
@@ -1048,13 +1048,14 @@ function generateQrSvg(text, size) {
                 case 'a': return `[${inner()}](${node.getAttribute('href') || ''})`;
                 case 'hr': return `---\n\n`;
                 case 'br': return '\n';
-                case 'p': case 'div': return `${inner()}\n\n`;
+                case 'div': return `${inner()}\n`;
+                case 'p': return `${inner()}\n\n`;
                 default: return inner();
             }
         }
 
         return Array.from(div.childNodes).map(convert).join('')
-            .replace(/\n{3,}/g, '\n\n').trim();
+            .replace(/\n{4,}/g, '\n\n\n').trim();
     }
 
     // ── Editor Mode Toggle ──
