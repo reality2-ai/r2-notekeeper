@@ -221,29 +221,31 @@
             color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.75;
             outline: none;
         }
-        /* Line-type styles for markdown-backed visual editor */
-        .editor-preview .md-h1 { font-family: var(--display); font-size: 24px; font-weight: 700; color: var(--text); margin: 16px 0 8px; letter-spacing: -0.3px; }
-        .editor-preview .md-h2 { font-family: var(--display); font-size: 20px; font-weight: 600; color: var(--text); margin: 14px 0 6px; }
-        .editor-preview .md-h3 { font-family: var(--sans); font-size: 16px; font-weight: 600; color: var(--text); margin: 12px 0 4px; }
-        .editor-preview .md-p { margin: 2px 0; min-height: 1.75em; }
-        .editor-preview .md-quote { border-left: 3px solid var(--accent-dim); padding: 2px 16px; margin: 2px 0; color: var(--text-dim); font-style: italic; }
-        .editor-preview .md-li { margin: 2px 0; padding-left: 20px; position: relative; }
-        .editor-preview .md-li::before { content: '\2022'; position: absolute; left: 6px; color: var(--text-dim); }
-        .editor-preview .md-ol { margin: 2px 0; padding-left: 24px; position: relative; }
-        .editor-preview .md-ol::before { content: attr(data-num) '.'; position: absolute; left: 4px; color: var(--text-dim); font-size: 14px; }
-        .editor-preview .md-hr { margin: 8px 0; }
-        .editor-preview .md-hr hr { border: none; border-top: 1px solid var(--border); }
-        .editor-preview .md-checkbox { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
-        .editor-preview .md-cb { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
-        .editor-preview .md-cb-text { flex: 1; }
-        .editor-preview .md-cb-done { text-decoration: line-through; opacity: 0.5; }
-        .editor-preview pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin: 8px 0; overflow-x: auto; }
-        .editor-preview pre code { font-family: var(--mono); font-size: 13px; color: var(--text); }
-        .editor-preview strong { color: var(--text); font-weight: 600; }
-        .editor-preview em { color: var(--text-dim); font-style: italic; }
-        .editor-preview code { font-family: var(--mono); font-size: 13px; background: var(--surface2); padding: 2px 6px; border-radius: 4px; color: var(--accent); min-width: 1em; display: inline-block; }
-        .editor-preview a { color: var(--accent); text-decoration: none; }
-        .editor-preview a:hover { text-decoration: underline; }
+        /* Live markdown editor */
+        .md-editor {
+            padding: 8px 32px 32px; min-height: 100%; outline: none;
+            color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.75;
+            white-space: pre-wrap; word-wrap: break-word;
+        }
+        .md-editor:empty::before { content: 'Start writing...'; color: var(--text-faint); pointer-events: none; }
+        /* Markdown syntax markers - dimmed */
+        .md-editor .mk { color: var(--text-faint); font-size: 0.85em; font-weight: 400; }
+        /* Inline formatting rendered */
+        .md-editor .md-bold { font-weight: 600; color: var(--text); }
+        .md-editor .md-italic { font-style: italic; }
+        .md-editor .md-code { font-family: var(--mono); font-size: 13px; background: var(--surface2); padding: 1px 4px; border-radius: 3px; color: var(--accent); }
+        .md-editor .md-link-text { color: var(--accent); }
+        .md-editor .md-link-url { color: var(--text-faint); font-size: 0.85em; }
+        /* Block-level line styling */
+        .md-editor .md-line { display: block; min-height: 1.75em; }
+        .md-editor .md-line-h1 { font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: -0.3px; margin: 12px 0 6px; }
+        .md-editor .md-line-h2 { font-family: var(--display); font-size: 20px; font-weight: 600; margin: 10px 0 4px; }
+        .md-editor .md-line-h3 { font-family: var(--sans); font-size: 16px; font-weight: 600; margin: 8px 0 2px; }
+        .md-editor .md-line-quote { border-left: 3px solid var(--accent-dim); padding-left: 14px; color: var(--text-dim); font-style: italic; }
+        .md-editor .md-line-li { padding-left: 16px; }
+        .md-editor .md-line-hr { border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px; }
+        .md-editor .md-line-code { font-family: var(--mono); font-size: 13px; background: var(--surface); padding: 2px 8px; border-radius: 4px; }
+        .md-editor .md-line-cb { padding-left: 4px; }
         .editor-preview[contenteditable]:empty::before {
             content: 'Start writing...';
             color: var(--text-faint);
@@ -453,17 +455,13 @@
                         <button class="fmt-btn" onclick="fmt('checkbox')" title="Checkbox">&#9744;</button>
                         <button class="fmt-btn" onclick="fmt('hr')" title="Horizontal rule">&mdash;</button>
                         <button class="fmt-btn" onclick="fmt('link')" title="Link">Link</button>
-                        <div class="mode-toggle">
-                            <button id="mode-visual" class="active" onclick="setEditorMode('visual')">Visual</button>
-                            <button id="mode-markdown" onclick="setEditorMode('markdown')">Markdown</button>
-                        </div>
                     </div>
                 </div>
                 <div class="editor-scroll">
-                    <!-- WYSIWYG editor (default) -->
-                    <div class="editor-preview" id="editor-visual" contenteditable="true"></div>
-                    <!-- Raw markdown editor (toggle) -->
-                    <textarea class="editor-content" id="editor-content" placeholder="Raw markdown..." style="display:none"></textarea>
+                    <!-- Live markdown editor: raw markdown with inline decorations -->
+                    <div class="md-editor" id="md-editor" contenteditable="true"></div>
+                    <!-- Hidden textarea keeps markdown in sync for form submission / copy -->
+                    <textarea id="editor-content" style="display:none"></textarea>
                 </div>
             </div>
         </div>
@@ -972,7 +970,12 @@ function generateQrSvg(text, size) {
     // and applied as markdown string operations. No HTML-to-markdown.
     // ══════════════════════════════════════════════════════════════
 
-    let editorMarkdown = ''; // live markdown content for visual mode
+    // ══════════════════════════════════════════════════════════════
+    // Live Markdown Editor
+    // Single contenteditable surface containing raw markdown text
+    // with inline CSS decorations. Cursor lives in the markdown.
+    // No position mapping. No HTML-to-markdown conversion.
+    // ══════════════════════════════════════════════════════════════
     function updateSyncIndicator(state) {
         const el = document.getElementById('sync-indicator');
         if (!el) return;
@@ -994,513 +997,259 @@ function generateQrSvg(text, size) {
         }
     }
 
-    // ── Markdown-Backed Visual Renderer ──
-    // Renders markdown string to visual HTML with line-position markers.
-    // Each line gets data-line and data-offset for cursor mapping.
+    // ── Live Markdown Decorator ──
+    // Takes a line of markdown, returns HTML with formatting markers
+    // dimmed and content styled. The raw markdown text is preserved
+    // in the DOM so the cursor moves through actual markdown characters.
 
-    function renderInline(text) {
+    function decorateLine(text) {
+        if (!text) return '';
         let h = escHtml(text);
-        h = h.replace(/`([^`]*)`/g, '<code>$1</code>');
-        h = h.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-        h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-        return h || '<br>';
+        // Inline code: dim the backticks, style the content
+        h = h.replace(/`([^`]*)`/g, '<span class="mk">`</span><span class="md-code">$1</span><span class="mk">`</span>');
+        // Bold italic
+        h = h.replace(/\*\*\*(.+?)\*\*\*/g, '<span class="mk">***</span><span class="md-bold md-italic">$1</span><span class="mk">***</span>');
+        // Bold
+        h = h.replace(/\*\*(.+?)\*\*/g, '<span class="mk">**</span><span class="md-bold">$1</span><span class="mk">**</span>');
+        // Italic
+        h = h.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<span class="mk">*</span><span class="md-italic">$1</span><span class="mk">*</span>');
+        // Links: [text](url) - dim brackets and url
+        h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span class="mk">[</span><span class="md-link-text">$1</span><span class="mk">](</span><span class="md-link-url">$2</span><span class="mk">)</span>');
+        return h;
     }
 
-    function renderToVisual(md, container) {
+    // Render markdown into the live editor with decorations.
+    // Each line becomes a <div class="md-line"> with decorated content.
+    // The actual markdown characters are preserved in the DOM text.
+    function renderLiveEditor(md, container) {
         const lines = md.split('\n');
-        let offset = 0;
-        let inCodeBlock = false;
-        let codeLines = [], codeStart = 0, codeLang = '';
         const els = [];
+        let inCodeBlock = false;
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
+            const div = document.createElement('div');
+            div.className = 'md-line';
 
-            // Code block handling
             if (line.startsWith('```')) {
-                if (inCodeBlock) {
-                    // End code block
-                    const pre = document.createElement('pre');
-                    pre.setAttribute('data-line', codeStart);
-                    pre.setAttribute('data-offset', offset - codeLines.join('\n').length - 4);
-                    const code = document.createElement('code');
-                    code.textContent = codeLines.join('\n');
-                    pre.appendChild(code);
-                    els.push(pre);
-                    inCodeBlock = false;
-                    codeLines = [];
-                } else {
-                    inCodeBlock = true;
-                    codeStart = i;
-                    codeLang = line.slice(3);
-                }
-                offset += line.length + 1;
-                continue;
-            }
-            if (inCodeBlock) {
-                codeLines.push(line);
-                offset += line.length + 1;
-                continue;
-            }
-
-            const el = document.createElement('div');
-            el.setAttribute('data-line', i);
-            el.setAttribute('data-offset', offset);
-
-            if (line.match(/^### /)) {
-                el.innerHTML = renderInline(line.slice(4));
-                el.className = 'md-h3';
-            } else if (line.match(/^## /)) {
-                el.innerHTML = renderInline(line.slice(3));
-                el.className = 'md-h2';
-            } else if (line.match(/^# /)) {
-                el.innerHTML = renderInline(line.slice(2));
-                el.className = 'md-h1';
+                inCodeBlock = !inCodeBlock;
+                div.className = 'md-line md-line-code';
+                div.innerHTML = '<span class="mk">' + escHtml(line) + '</span>';
+            } else if (inCodeBlock) {
+                div.className = 'md-line md-line-code';
+                div.textContent = line;
+            } else if (line.match(/^#{1,3} /)) {
+                const level = line.match(/^(#{1,3}) /)[1].length;
+                div.className = 'md-line md-line-h' + level;
+                const prefix = line.slice(0, level + 1);
+                const content = line.slice(level + 1);
+                div.innerHTML = '<span class="mk">' + escHtml(prefix) + '</span>' + decorateLine(content);
             } else if (line === '---') {
-                el.innerHTML = '<hr>';
-                el.className = 'md-hr';
+                div.className = 'md-line md-line-hr';
+                div.innerHTML = '<span class="mk">---</span>';
             } else if (line.match(/^> /)) {
-                el.innerHTML = renderInline(line.slice(2));
-                el.className = 'md-quote';
-            } else if (line.match(/^- \[x\] /)) {
-                const text = line.slice(6);
-                el.className = 'md-checkbox';
-                el.innerHTML = '<input type="checkbox" checked class="md-cb"><span class="md-cb-text md-cb-done">' + renderInline(text) + '</span>';
-            } else if (line.match(/^- \[ \] /)) {
-                const text = line.slice(6);
-                el.className = 'md-checkbox';
-                el.innerHTML = '<input type="checkbox" class="md-cb"><span class="md-cb-text">' + renderInline(text) + '</span>';
+                div.className = 'md-line md-line-quote';
+                div.innerHTML = '<span class="mk">&gt; </span>' + decorateLine(line.slice(2));
+            } else if (line.match(/^- \[[ x]\] /)) {
+                div.className = 'md-line md-line-cb';
+                const checked = line[3] === 'x';
+                div.innerHTML = '<span class="mk">- [' + (checked ? 'x' : ' ') + '] </span>' +
+                    (checked ? '<span class="md-italic" style="opacity:0.5;text-decoration:line-through">' : '') +
+                    decorateLine(line.slice(6)) +
+                    (checked ? '</span>' : '');
             } else if (line.match(/^[-*] /)) {
-                el.innerHTML = renderInline(line.slice(2));
-                el.className = 'md-li';
+                div.className = 'md-line md-line-li';
+                div.innerHTML = '<span class="mk">' + escHtml(line.slice(0, 2)) + '</span>' + decorateLine(line.slice(2));
             } else if (line.match(/^\d+\. /)) {
-                const m = line.match(/^(\d+)\. (.*)/);
-                el.innerHTML = renderInline(m[2]);
-                el.className = 'md-ol';
-                el.setAttribute('data-num', m[1]);
+                const m = line.match(/^(\d+\. )/);
+                div.className = 'md-line md-line-li';
+                div.innerHTML = '<span class="mk">' + escHtml(m[1]) + '</span>' + decorateLine(line.slice(m[1].length));
             } else {
-                el.innerHTML = renderInline(line);
-                el.className = 'md-p';
+                div.className = 'md-line';
+                div.innerHTML = decorateLine(line) || '<br>';
             }
 
-            els.push(el);
-            offset += line.length + 1;
+            els.push(div);
         }
 
         container.innerHTML = '';
         els.forEach(el => container.appendChild(el));
     }
 
-    // ── Cursor Position Mapping ──
-    // Handles inline formatting characters (`, **, *, [...](...))
-    // that exist in markdown but not in the visual rendering.
-
-    function getMarkdownPrefix(line) {
-        const m = line.match(/^(#{1,3} |[-*] \[[ x]\] |[-*] |\d+\. |> )/);
-        return m ? m[1] : '';
+    // ── Live Editor: extract markdown from contenteditable ──
+    // The editor contains raw markdown text with decoration spans.
+    // Extract plain text to get the markdown back.
+    function getEditorMarkdown() {
+        const editor = document.getElementById('md-editor');
+        const lines = [];
+        editor.querySelectorAll('.md-line').forEach(div => {
+            lines.push(div.textContent);
+        });
+        return lines.join('\n');
     }
 
-    // Build a map from visual character index → markdown character index
-    // for the content part of a line (after the prefix).
-    // Build visual↔markdown position map for inline formatting.
-    // Only activates for lines that actually contain formatting markers.
-    // For plain text, returns null (use identity mapping).
-    function buildPosMap(content) {
-        // Quick check: does this content have any formatting markers?
-        if (!/[`*\[]/.test(content)) return null; // no formatting, identity map
-
-        const v2m = [];
-        let vi = 0, mi = 0;
-        while (mi < content.length) {
-            if (content[mi] === '`') {
-                const close = content.indexOf('`', mi + 1);
-                if (close === -1) { v2m[vi++] = mi++; continue; } // unpaired, treat as literal
-                mi++; // skip opening
-                while (mi < close) { v2m[vi++] = mi++; }
-                mi++; // skip closing
-            } else if (content.slice(mi, mi + 2) === '**') {
-                const close = content.indexOf('**', mi + 2);
-                if (close === -1) { v2m[vi++] = mi++; v2m[vi++] = mi++; continue; }
-                mi += 2;
-                while (mi < close) { v2m[vi++] = mi++; }
-                mi += 2;
-            } else if (content[mi] === '*' && content[mi + 1] !== '*' && content[mi + 1] !== ' ') {
-                const close = content.indexOf('*', mi + 1);
-                if (close === -1) { v2m[vi++] = mi++; continue; }
-                mi++;
-                while (mi < close) { v2m[vi++] = mi++; }
-                mi++;
-            } else if (content[mi] === '[') {
-                const closeBracket = content.indexOf('](', mi);
-                if (closeBracket !== -1) {
-                    const closeParen = content.indexOf(')', closeBracket + 2);
-                    if (closeParen !== -1) {
-                        mi++; // skip [
-                        while (mi < closeBracket) { v2m[vi++] = mi++; }
-                        mi = closeParen + 1; // skip ](url)
-                        continue;
-                    }
-                }
-                v2m[vi++] = mi++;
-            } else {
-                v2m[vi++] = mi++;
-            }
-        }
-        v2m[vi] = mi;
-        return v2m;
+    function getCurrentMarkdown() {
+        return getEditorMarkdown();
     }
 
-    function visualToMdPos(container) {
+    // Re-decorate the editor content while preserving cursor position.
+    function refreshDecorations() {
+        const editor = document.getElementById('md-editor');
+        // Save cursor as text offset from start
         const sel = window.getSelection();
-        if (!sel.rangeCount) return null;
-        let node = sel.anchorNode;
-        if (node.nodeType === 3) node = node.parentElement;
-        let lineEl = node;
-        while (lineEl && !lineEl.hasAttribute('data-line')) lineEl = lineEl.parentElement;
-        if (!lineEl) return null;
-
-        const lineOffset = parseInt(lineEl.dataset.offset);
-        const lineIndex = parseInt(lineEl.dataset.line);
-        const line = editorMarkdown.split('\n')[lineIndex] || '';
-        const prefix = getMarkdownPrefix(line);
-        const content = line.slice(prefix.length);
-
-        const range = document.createRange();
-        range.setStart(lineEl, 0);
-        range.setEnd(sel.anchorNode, sel.anchorOffset);
-        const charInVisual = range.toString().length;
-
-        const v2m = buildPosMap(content);
-        const mdChar = v2m
-            ? (charInVisual < v2m.length ? v2m[charInVisual] : content.length)
-            : charInVisual; // null map = identity (plain text)
-
-        return lineOffset + prefix.length + mdChar;
+        let cursorOffset = 0;
+        if (sel.rangeCount) {
+            const range = sel.getRangeAt(0).cloneRange();
+            range.selectNodeContents(editor);
+            range.setEnd(sel.anchorNode, sel.anchorOffset);
+            cursorOffset = range.toString().length;
+        }
+        // Get current markdown and re-render
+        const md = getEditorMarkdown();
+        document.getElementById('editor-content').value = md;
+        renderLiveEditor(md, editor);
+        // Restore cursor
+        restoreCursor(editor, cursorOffset);
     }
 
-    function mdPosToVisual(container, mdPos) {
-        const lines = editorMarkdown.split('\n');
-        let offset = 0;
-        for (let i = 0; i < lines.length; i++) {
-            if (offset + lines[i].length >= mdPos || i === lines.length - 1) {
-                const charInLine = mdPos - offset;
-                const prefix = getMarkdownPrefix(lines[i]);
-                const content = lines[i].slice(prefix.length);
-                const mdCharInContent = Math.max(0, charInLine - prefix.length);
-
-                // Reverse map: markdown position → visual position
-                const v2m = buildPosMap(content);
-                let visualChar;
-                if (!v2m) {
-                    visualChar = mdCharInContent; // identity for plain text
-                } else {
-                    visualChar = v2m.length - 1;
-                    for (let v = 0; v < v2m.length; v++) {
-                        if (v2m[v] >= mdCharInContent) { visualChar = v; break; }
-                    }
-                }
-                const el = container.querySelector('[data-line="' + i + '"]');
-                if (!el) return;
-                // Walk text nodes to place cursor
-                const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-                let count = 0, textNode;
-                while (textNode = walker.nextNode()) {
-                    if (count + textNode.length >= visualChar) {
-                        try {
-                            const sel = window.getSelection();
-                            const range = document.createRange();
-                            range.setStart(textNode, Math.min(visualChar - count, textNode.length));
-                            range.collapse(true);
-                            sel.removeAllRanges();
-                            sel.addRange(range);
-                        } catch (e) {}
-                        return;
-                    }
-                    count += textNode.length;
-                }
-                // Fallback: place at end of element
+    function restoreCursor(container, offset) {
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+        let count = 0, node;
+        while (node = walker.nextNode()) {
+            if (count + node.length >= offset) {
                 try {
                     const sel = window.getSelection();
                     const range = document.createRange();
-                    range.selectNodeContents(el);
-                    range.collapse(false);
+                    range.setStart(node, Math.min(offset - count, node.length));
+                    range.collapse(true);
                     sel.removeAllRanges();
                     sel.addRange(range);
                 } catch (e) {}
                 return;
             }
-            offset += lines[i].length + 1;
+            count += node.length;
+            count++; // account for newline between lines
         }
     }
 
-    // ── Markdown String Operations ──
-
-    function mdInsert(pos, text) {
-        editorMarkdown = editorMarkdown.slice(0, pos) + text + editorMarkdown.slice(pos);
-    }
-    function mdDelete(pos, len) {
-        if (pos < 0) { len += pos; pos = 0; }
-        if (len <= 0) return;
-        editorMarkdown = editorMarkdown.slice(0, pos) + editorMarkdown.slice(pos + len);
-    }
-    function mdFindLineStart(pos) {
-        const i = editorMarkdown.lastIndexOf('\n', pos - 1);
-        return i + 1;
-    }
-    function mdGetLine(pos) {
-        const start = mdFindLineStart(pos);
-        const end = editorMarkdown.indexOf('\n', start);
-        return editorMarkdown.substring(start, end === -1 ? editorMarkdown.length : end);
-    }
-
-    function syncToTextarea() {
-        document.getElementById('editor-content').value = editorMarkdown;
-    }
-
-    // ── Visual Editor Input Handler ──
-    // Intercepts ALL input and applies to markdown string.
-
-    function setupVisualEditor(container) {
-        container.addEventListener('beforeinput', function(e) {
-            // Only handle input types we understand - let selection, copy, etc. through
-            const handled = ['insertText', 'insertParagraph', 'insertLineBreak',
-                'deleteContentBackward', 'deleteContentForward', 'deleteWordBackward',
-                'insertFromPaste', 'insertFromDrop'];
-            if (!handled.includes(e.inputType)) return;
-
-            e.preventDefault();
-            const pos = visualToMdPos(container);
-            if (pos === null) return;
-            let newPos = pos;
-
-            switch (e.inputType) {
-                case 'insertText':
-                    mdInsert(pos, e.data);
-                    newPos = pos + e.data.length;
-                    break;
-                case 'insertParagraph':
-                case 'insertLineBreak': {
-                    const lineStart = editorMarkdown.lastIndexOf('\n', pos - 1) + 1;
-                    const currentLine = editorMarkdown.substring(lineStart, pos);
-                    const prefix = getMarkdownPrefix(currentLine);
-                    const contentAfterPrefix = currentLine.slice(prefix.length);
-
-                    if (prefix && contentAfterPrefix.trim() === '') {
-                        // Empty formatted line (e.g. just "- " or "> ") - clear the prefix
-                        mdDelete(lineStart, currentLine.length);
-                        newPos = lineStart;
-                    } else if (prefix && prefix !== '## ' && prefix !== '### ' && prefix !== '# ') {
-                        // Continue list/quote/checkbox prefix on new line
-                        const contPrefix = prefix.match(/^\d+\. /)
-                            ? (parseInt(prefix) + 1) + '. '
-                            : prefix.replace(/\[x\]/, '[ ]'); // new checkbox unchecked
-                        mdInsert(pos, '\n' + contPrefix);
-                        newPos = pos + 1 + contPrefix.length;
-                    } else {
-                        // Normal Enter - just newline, no prefix carry
-                        mdInsert(pos, '\n');
-                        newPos = pos + 1;
-                    }
-                    break;
-                }
-                case 'deleteContentBackward':
-                    if (pos > 0) { mdDelete(pos - 1, 1); newPos = pos - 1; }
-                    break;
-                case 'deleteContentForward':
-                    mdDelete(pos, 1);
-                    newPos = pos;
-                    break;
-                case 'deleteWordBackward': {
-                    const before = editorMarkdown.slice(0, pos);
-                    const m = before.match(/\S+\s*$/);
-                    const delLen = m ? m[0].length : 1;
-                    mdDelete(pos - delLen, delLen);
-                    newPos = pos - delLen;
-                    break;
-                }
-                case 'insertFromPaste':
-                case 'insertFromDrop': {
-                    const text = (e.dataTransfer || e.clipboardData || {getData:()=>''}).getData('text/plain') || '';
-                    if (text) { mdInsert(pos, text); newPos = pos + text.length; }
-                    break;
-                }
-                default:
-                    return; // Don't re-render for unhandled types
-            }
-
-            syncToTextarea();
-            renderToVisual(editorMarkdown, container);
-            mdPosToVisual(container, newPos);
+    // Set up the live editor
+    function setupLiveEditor(editor) {
+        // On input, refresh decorations after a short delay
+        let decorateTimer = null;
+        editor.addEventListener('input', function() {
+            document.getElementById('editor-content').value = getEditorMarkdown();
             markDirty();
+            // Debounce decoration refresh to avoid cursor jumps on every keystroke
+            clearTimeout(decorateTimer);
+            decorateTimer = setTimeout(refreshDecorations, 800);
         });
 
-        // Handle checkbox clicks
-        container.addEventListener('click', function(e) {
-            if (e.target.classList.contains('md-cb')) {
-                e.preventDefault();
-                const lineEl = e.target.closest('[data-offset]');
-                if (!lineEl) return;
-                const lineOff = parseInt(lineEl.dataset.offset);
-                const checked = !e.target.checked; // before toggle
-                if (checked) {
-                    // Uncheck: [x] → [ ]
-                    editorMarkdown = editorMarkdown.slice(0, lineOff + 3) + ' ' + editorMarkdown.slice(lineOff + 4);
-                } else {
-                    // Check: [ ] → [x]
-                    editorMarkdown = editorMarkdown.slice(0, lineOff + 3) + 'x' + editorMarkdown.slice(lineOff + 4);
+        // On Enter, handle smart prefix continuation
+        editor.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                // Get current line text before cursor
+                const sel = window.getSelection();
+                if (!sel.rangeCount) return;
+                const node = sel.anchorNode;
+                let lineDiv = node.nodeType === 3 ? node.parentElement : node;
+                while (lineDiv && !lineDiv.classList.contains('md-line')) lineDiv = lineDiv.parentElement;
+                if (!lineDiv) return;
+
+                const lineText = lineDiv.textContent;
+                const prefix = (lineText.match(/^([-*] \[[ x]\] |[-*] |\d+\. |> )/) || [''])[0];
+
+                if (prefix && lineText.trim() === prefix.trim()) {
+                    // Empty formatted line - clear the prefix
+                    e.preventDefault();
+                    lineDiv.textContent = '';
+                    lineDiv.innerHTML = '<br>';
+                    const range = document.createRange();
+                    range.setStart(lineDiv, 0);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    markDirty();
+                } else if (prefix && !prefix.match(/^#{1,3} /)) {
+                    // Continue prefix on new line
+                    e.preventDefault();
+                    const contPrefix = prefix.match(/^\d+\. /)
+                        ? (parseInt(prefix) + 1) + '. '
+                        : prefix.replace(/\[x\]/, '[ ]');
+                    document.execCommand('insertText', false, '\n' + contPrefix);
+                    markDirty();
                 }
-                syncToTextarea();
-                renderToVisual(editorMarkdown, container);
-                markDirty();
+                // Else: normal Enter (browser handles it)
             }
         });
     }
 
-    // ── Editor Mode Toggle ──
-    let editorMode = 'visual';
+    // ── Formatting Commands ──
+    // Insert markdown syntax at cursor position.
+    // The live editor shows the result immediately via decorations.
 
-    window.setEditorMode = function(mode) {
-        editorMode = mode;
-        const visual = document.getElementById('editor-visual');
-        const textarea = document.getElementById('editor-content');
-        const visualBtn = document.getElementById('mode-visual');
-        const mdBtn = document.getElementById('mode-markdown');
-
-        if (mode === 'markdown') {
-            textarea.value = editorMarkdown;
-            visual.style.display = 'none';
-            textarea.style.display = 'block';
-            visualBtn.classList.remove('active');
-            mdBtn.classList.add('active');
-            textarea.focus();
-        } else {
-            editorMarkdown = textarea.value;
-            renderToVisual(editorMarkdown, visual);
-            textarea.style.display = 'none';
-            visual.style.display = 'block';
-            visualBtn.classList.add('active');
-            mdBtn.classList.remove('active');
-            visual.focus();
-        }
-    };
-
-    function getCurrentMarkdown() {
-        if (editorMode === 'markdown') {
-            return document.getElementById('editor-content').value;
-        }
-        return editorMarkdown;
+    function insertTextAtCursor(text) {
+        const editor = document.getElementById('md-editor');
+        editor.focus();
+        document.execCommand('insertText', false, text);
     }
 
-    // ── Formatting Commands (unified - always operates on markdown) ──
+    function getSelectedText() {
+        const sel = window.getSelection();
+        return sel.rangeCount ? sel.toString() : '';
+    }
 
     window.fmt = function(type) {
-        const visual = document.getElementById('editor-visual');
-        const ta = document.getElementById('editor-content');
-        let pos, selEnd, md;
-
-        if (editorMode === 'visual') {
-            pos = visualToMdPos(visual) || 0;
-            selEnd = pos; // TODO: selection range in visual mode
-            md = editorMarkdown;
-        } else {
-            pos = ta.selectionStart;
-            selEnd = ta.selectionEnd;
-            md = ta.value;
-        }
-
-        const selText = md.substring(pos, selEnd);
-        let newPos = pos;
-
-        function apply() {
-            if (editorMode === 'visual') {
-                editorMarkdown = md;
-                syncToTextarea();
-                renderToVisual(editorMarkdown, visual);
-                mdPosToVisual(visual, newPos);
-            } else {
-                ta.value = md;
-                ta.selectionStart = ta.selectionEnd = newPos;
-                ta.focus();
-            }
-            markDirty();
-        }
+        const editor = document.getElementById('md-editor');
+        editor.focus();
+        const selected = getSelectedText();
 
         switch (type) {
             case 'paragraph': {
-                const ls = md.lastIndexOf('\n', pos - 1) + 1;
-                const line = md.substring(ls, md.indexOf('\n', ls) === -1 ? md.length : md.indexOf('\n', ls));
-                const pfx = getMarkdownPrefix(line);
-                if (pfx) { md = md.slice(0, ls) + line.slice(pfx.length) + md.slice(ls + line.length); newPos = pos - pfx.length; }
-                apply(); break;
+                // Remove line prefix
+                // Handled by re-typing the line without prefix
+                break;
             }
-            case 'heading': {
-                const ls = md.lastIndexOf('\n', pos - 1) + 1;
-                const line = md.substring(ls, md.indexOf('\n', ls) === -1 ? md.length : md.indexOf('\n', ls));
-                if (line.startsWith('## ')) { md = md.slice(0, ls) + line.slice(3) + md.slice(ls + line.length); newPos = pos - 3; }
-                else { md = md.slice(0, ls) + '## ' + line + md.slice(ls + line.length); newPos = pos + 3; }
-                apply(); break;
-            }
-            case 'bold': {
-                if (selEnd > pos) { md = md.slice(0, pos) + '**' + selText + '**' + md.slice(selEnd); newPos = selEnd + 4; }
-                else { md = md.slice(0, pos) + '****' + md.slice(pos); newPos = pos + 2; }
-                apply(); break;
-            }
-            case 'italic': {
-                if (selEnd > pos) { md = md.slice(0, pos) + '*' + selText + '*' + md.slice(selEnd); newPos = selEnd + 2; }
-                else { md = md.slice(0, pos) + '**' + md.slice(pos); newPos = pos + 1; }
-                apply(); break;
-            }
-            case 'code': {
-                if (selEnd > pos) { md = md.slice(0, pos) + '`' + selText + '`' + md.slice(selEnd); newPos = selEnd + 2; }
-                else { md = md.slice(0, pos) + '``' + md.slice(pos); newPos = pos + 1; }
-                apply(); break;
-            }
-            case 'codeblock': {
-                md = md.slice(0, pos) + '```\n' + (selText || '') + '\n```' + md.slice(selEnd);
-                newPos = pos + 4;
-                apply(); break;
-            }
-            case 'ul': case 'ol': case 'quote': case 'checkbox': {
-                const ls = md.lastIndexOf('\n', pos - 1) + 1;
-                const line = md.substring(ls, md.indexOf('\n', ls) === -1 ? md.length : md.indexOf('\n', ls));
-                const prefixes = { ul: '- ', ol: '1. ', quote: '> ', checkbox: '- [ ] ' };
-                const pfx = prefixes[type];
-                if (line.startsWith(pfx)) {
-                    md = md.slice(0, ls) + line.slice(pfx.length) + md.slice(ls + line.length);
-                    newPos = pos - pfx.length;
-                } else {
-                    // Remove any existing prefix first
-                    const existingPfx = getMarkdownPrefix(line);
-                    const cleanLine = existingPfx ? line.slice(existingPfx.length) : line;
-                    md = md.slice(0, ls) + pfx + cleanLine + md.slice(ls + line.length);
-                    newPos = pos - existingPfx.length + pfx.length;
-                }
-                apply(); break;
-            }
-            case 'hr': {
-                md = md.slice(0, pos) + '\n---\n' + md.slice(pos);
-                newPos = pos + 5;
-                apply(); break;
-            }
+            case 'heading':
+                if (selected) { insertTextAtCursor('## ' + selected); }
+                else { insertTextAtCursor('## '); }
+                break;
+            case 'bold':
+                insertTextAtCursor('**' + (selected || '') + '**');
+                break;
+            case 'italic':
+                insertTextAtCursor('*' + (selected || '') + '*');
+                break;
+            case 'code':
+                insertTextAtCursor('`' + (selected || '') + '`');
+                break;
+            case 'codeblock':
+                insertTextAtCursor('```\n' + (selected || '') + '\n```');
+                break;
+            case 'ul':
+                insertTextAtCursor('- ' + (selected || ''));
+                break;
+            case 'ol':
+                insertTextAtCursor('1. ' + (selected || ''));
+                break;
+            case 'quote':
+                insertTextAtCursor('> ' + (selected || ''));
+                break;
+            case 'checkbox':
+                insertTextAtCursor('- [ ] ' + (selected || ''));
+                break;
+            case 'hr':
+                insertTextAtCursor('\n---\n');
+                break;
             case 'link': {
                 const url = prompt('URL:');
-                if (url) {
-                    const linkText = selEnd > pos ? selText : 'link text';
-                    md = md.slice(0, pos) + '[' + linkText + '](' + url + ')' + md.slice(selEnd);
-                    newPos = pos + linkText.length + url.length + 4;
-                    apply();
-                }
+                if (url) insertTextAtCursor('[' + (selected || 'link') + '](' + url + ')');
                 break;
             }
         }
+        markDirty();
+        setTimeout(refreshDecorations, 100);
     };
 
-    // ── Hive Event Processing ──
-    function processHiveOutbound() {
-        if (!hive) return;
-        const json = hive.drain_outbound();
         if (json === '[]') return;
         try {
             const events = JSON.parse(json);
@@ -1582,7 +1331,6 @@ function generateQrSvg(text, size) {
         }
         currentNoteId = id;
         saveNotes(); renderNoteList(); renderEditor();
-        setEditorMode('visual');
         document.getElementById('editor').classList.add('mobile-visible');
         document.getElementById('editor-title').focus();
     };
@@ -1665,9 +1413,8 @@ function generateQrSvg(text, size) {
         empty.style.display = 'none'; active.style.display = 'flex';
         const n = notes[currentNoteId];
         document.getElementById('editor-title').value = n.title;
-        document.getElementById('editor-content').value = n.content;
-        editorMarkdown = n.content || '';
-        renderToVisual(editorMarkdown, document.getElementById('editor-visual'));
+        document.getElementById('editor-content').value = n.content || '';
+        renderLiveEditor(n.content || '', document.getElementById('md-editor'));
         document.getElementById('editor-meta').textContent = `${n.id} \u00b7 ${timeAgo(n.updated_at)}`;
     }
     function renderEventLog() {
@@ -2199,13 +1946,9 @@ function generateQrSvg(text, size) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); newNote(); }
     });
     document.getElementById('editor-title').addEventListener('input', markDirty);
-    document.getElementById('editor-content').addEventListener('input', function() {
-        editorMarkdown = this.value;
-        markDirty();
-    });
 
-    // Set up the markdown-backed visual editor
-    setupVisualEditor(document.getElementById('editor-visual'));
+    // Set up the live markdown editor
+    setupLiveEditor(document.getElementById('md-editor'));
     window.addEventListener('beforeunload', () => flushIfDirty());
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushIfDirty(); });
 
