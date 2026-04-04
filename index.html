@@ -1195,6 +1195,12 @@ function generateQrSvg(text, size) {
 
     function setupVisualEditor(container) {
         container.addEventListener('beforeinput', function(e) {
+            // Only handle input types we understand - let selection, copy, etc. through
+            const handled = ['insertText', 'insertParagraph', 'insertLineBreak',
+                'deleteContentBackward', 'deleteContentForward', 'deleteWordBackward',
+                'insertFromPaste', 'insertFromDrop'];
+            if (!handled.includes(e.inputType)) return;
+
             e.preventDefault();
             const pos = visualToMdPos(container);
             if (pos === null) return;
@@ -1839,22 +1845,32 @@ function generateQrSvg(text, size) {
                     ${escHtml(selfName)} <span style="color:var(--text-faint);font-size:10px">(this device)</span>
                 </span>
             </div>`;
-            let memberNames = [];
+            let members = [];
             if (isKeyHolder && trustGroup) {
-                memberNames = trustGroup.member_names() || [];
-                if (memberNames.length === 0) {
-                    try { memberNames = JSON.parse(localStorage.getItem(SK_MEMBERS) || '[]'); } catch {}
+                try { members = trustGroup.member_list() || []; } catch {}
+                if (members.length === 0) {
+                    try {
+                        const names = JSON.parse(localStorage.getItem(SK_MEMBERS) || '[]');
+                        members = names.map(n => ({ name: n, public_key_hex: '' }));
+                    } catch {}
                 }
             } else {
-                try { memberNames = JSON.parse(localStorage.getItem(SK_MEMBERS) || '[]'); } catch {}
+                try {
+                    const names = JSON.parse(localStorage.getItem(SK_MEMBERS) || '[]');
+                    members = names.map(n => ({ name: n, public_key_hex: '' }));
+                } catch {}
             }
-            memberNames.forEach(name => {
-                if (name !== selfName) {
-                    deviceHtml += `<div class="settings-row">
-                        <span class="label" style="display:flex;align-items:center;gap:6px">
+            members.forEach(m => {
+                if (m.name !== selfName) {
+                    const removeBtn = isKeyHolder && m.public_key_hex
+                        ? `<button class="btn btn-small" style="font-size:10px;padding:2px 8px;color:var(--red);border:1px solid var(--red);background:none;margin-left:auto" onclick="removeMember('${m.public_key_hex}','${escHtml(m.name)}')">Remove</button>`
+                        : '';
+                    deviceHtml += `<div class="settings-row" style="display:flex;align-items:center">
+                        <span class="label" style="display:flex;align-items:center;gap:6px;flex:1">
                             <span style="width:6px;height:6px;border-radius:50%;background:var(--text-faint);display:inline-block"></span>
-                            ${escHtml(name)}
+                            ${escHtml(m.name)}
                         </span>
+                        ${removeBtn}
                     </div>`;
                 }
             });
@@ -2059,6 +2075,22 @@ function generateQrSvg(text, size) {
             };
             relay.connect();
             document.getElementById('settings-relay-status').textContent = 'connecting...';
+        }
+    };
+
+    window.removeMember = function(publicKeyHex, name) {
+        if (!isKeyHolder || !trustGroup) return;
+        if (!confirm(`Remove ${name} from this trust group?`)) return;
+        try {
+            trustGroup.revoke_member(publicKeyHex, BigInt(nowNum()));
+            // Save updated trust group state
+            const tgBytes = trustGroup.to_bytes();
+            localStorage.setItem(SK_TG, btoa(String.fromCharCode(...tgBytes)));
+            // Refresh the panel
+            toggleTrustGroupPanel();
+            toggleTrustGroupPanel();
+        } catch (e) {
+            showError('Failed to remove member: ' + e.message);
         }
     };
 

@@ -316,6 +316,14 @@ export class R2TrustGroup {
         return ret >>> 0;
     }
     /**
+     * List members as JSON array of {name, public_key_hex} objects.
+     * @returns {any}
+     */
+    member_list() {
+        const ret = wasm.r2trustgroup_member_list(this.__wbg_ptr);
+        return ret;
+    }
+    /**
      * List member names as a JSON array.
      * @returns {any}
      */
@@ -377,6 +385,19 @@ export class R2TrustGroup {
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
+    }
+    /**
+     * Revoke a member by their public key hex string. Key holder only.
+     * @param {string} public_key_hex
+     * @param {bigint} now
+     */
+    revoke_member(public_key_hex, now) {
+        const ptr0 = passStringToWasm0(public_key_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.r2trustgroup_revoke_member(this.__wbg_ptr, ptr0, len0, now);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
     }
     /**
      * Serialize key holder state to bytes for persistent storage.

@@ -119,6 +119,10 @@ export class R2TrustGroup {
      */
     generate_join_code(now: bigint, ttl_secs: bigint): string;
     /**
+     * List members as JSON array of {name, public_key_hex} objects.
+     */
+    member_list(): any;
+    /**
      * List member names as a JSON array.
      */
     member_names(): any;
@@ -139,6 +143,10 @@ export class R2TrustGroup {
      * Returns the encrypted join response as bytes (to send to the joiner).
      */
     process_join(join_code_hex: string, device_public_key: Uint8Array, device_name: string, now: bigint): Uint8Array;
+    /**
+     * Revoke a member by their public key hex string. Key holder only.
+     */
+    revoke_member(public_key_hex: string, now: bigint): void;
     /**
      * Serialize key holder state to bytes for persistent storage.
      *
@@ -442,10 +450,12 @@ export interface InitOutput {
     readonly r2trustgroup_generate_join_code: (a: number, b: bigint, c: bigint) => [number, number];
     readonly r2trustgroup_hk: (a: number) => [number, number];
     readonly r2trustgroup_member_count: (a: number) => number;
+    readonly r2trustgroup_member_list: (a: number) => any;
     readonly r2trustgroup_member_names: (a: number) => any;
     readonly r2trustgroup_new: (a: bigint) => [number, number, number];
     readonly r2trustgroup_process_join: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: bigint) => [number, number, number, number];
     readonly r2trustgroup_public_key: (a: number) => [number, number];
+    readonly r2trustgroup_revoke_member: (a: number, b: number, c: number, d: bigint) => [number, number];
     readonly r2trustgroup_to_bytes: (a: number) => [number, number];
     readonly sign_ed25519: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly transcode_to_compact: (a: number, b: number) => [number, number, number, number];
