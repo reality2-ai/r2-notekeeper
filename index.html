@@ -443,7 +443,8 @@
                     <div class="fmt-sep"></div>
                     <button class="fmt-btn" onclick="fmt('ul')" title="Bullet list">&bull; List</button>
                     <button class="fmt-btn" onclick="fmt('ol')" title="Numbered list">1. List</button>
-                    <button class="fmt-btn" onclick="fmt('quote')" title="Blockquote">&gt; Quote</button>
+                    <button class="fmt-btn" onclick="fmt('quote')" title="Blockquote">&gt;</button>
+                    <button class="fmt-btn" onclick="fmt('checkbox')" title="Checkbox">&#9744;</button>
                     <button class="fmt-btn" onclick="fmt('hr')" title="Horizontal rule">&mdash;</button>
                     <button class="fmt-btn" onclick="fmt('link')" title="Link">Link</button>
                     <div class="mode-toggle">
@@ -997,6 +998,9 @@ function generateQrSvg(text, size) {
         html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
         // Links
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        // Checkboxes (must be before unordered lists)
+        html = html.replace(/^- \[x\] (.+)$/gm, '<li><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked style="width:16px;height:16px;cursor:pointer" onchange="markDirty()"><span style="text-decoration:line-through;opacity:0.6">$1</span></label></li>');
+        html = html.replace(/^- \[ \] (.+)$/gm, '<li><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" style="width:16px;height:16px;cursor:pointer" onchange="markDirty()"><span>$1</span></label></li>');
         // Unordered lists
         html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
         html = html.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
@@ -1049,6 +1053,15 @@ function generateQrSvg(text, size) {
                 case 'ol': return Array.from(node.children).map((li, i) => `${i+1}. ${convert(li).trim()}`).join('\n') + '\n\n';
                 case 'li': return inner();
                 case 'a': return `[${inner()}](${node.getAttribute('href') || ''})`;
+                case 'label': {
+                    const cb = node.querySelector('input[type="checkbox"]');
+                    const text = node.querySelector('span');
+                    if (cb && text) {
+                        return `- [${cb.checked ? 'x' : ' '}] ${text.textContent}\n`;
+                    }
+                    return inner();
+                }
+                case 'input': return ''; // handled by label
                 case 'hr': return `---\n\n`;
                 case 'br': return '\n';
                 case 'div': return `${inner()}\n`;
@@ -1168,7 +1181,19 @@ function generateQrSvg(text, size) {
                 case 'codeblock': insertAtCursor(ta, '```\n' + (sel || '') + '\n```'); break;
                 case 'ul': insertAtCursor(ta, '- ' + (sel || 'item')); break;
                 case 'ol': insertAtCursor(ta, '1. ' + (sel || 'item')); break;
-                case 'quote': insertAtCursor(ta, '> ' + (sel || 'quote')); break;
+                case 'quote': {
+                    // Toggle: remove > prefix if present, add if not
+                    const lineStart = ta.value.lastIndexOf('\n', ta.selectionStart - 1) + 1;
+                    const line = ta.value.substring(lineStart, ta.selectionEnd || ta.selectionStart);
+                    if (line.startsWith('> ')) {
+                        ta.value = ta.value.substring(0, lineStart) + line.replace(/^> /, '') + ta.value.substring(ta.selectionEnd || ta.selectionStart);
+                        ta.selectionStart = ta.selectionEnd = lineStart + line.length - 2;
+                    } else {
+                        insertAtCursor(ta, '> ' + (sel || ''));
+                    }
+                    break;
+                }
+                case 'checkbox': insertAtCursor(ta, '- [ ] ' + (sel || 'item')); break;
                 case 'hr': insertAtCursor(ta, '\n---\n'); break;
                 case 'link':
                     const mdUrl = prompt('URL:');
@@ -1213,9 +1238,44 @@ function generateQrSvg(text, size) {
             case 'ol':
                 document.execCommand('insertOrderedList');
                 break;
-            case 'quote':
-                document.execCommand('formatBlock', false, 'blockquote');
+            case 'quote': {
+                // Toggle: if already in blockquote, remove it
+                const qSel = window.getSelection();
+                const qNode = qSel.anchorNode;
+                const bq = qNode ? qNode.closest ? qNode.closest('blockquote') :
+                    qNode.parentElement ? qNode.parentElement.closest('blockquote') : null : null;
+                if (bq) {
+                    document.execCommand('formatBlock', false, 'p');
+                } else {
+                    document.execCommand('formatBlock', false, 'blockquote');
+                }
                 break;
+            }
+            case 'checkbox': {
+                // Insert a checkbox line
+                const cbSel = window.getSelection();
+                if (cbSel.rangeCount) {
+                    const range = cbSel.getRangeAt(0);
+                    const label = document.createElement('label');
+                    label.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 0';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.style.cssText = 'width:16px;height:16px;cursor:pointer';
+                    cb.addEventListener('change', function() { markDirty(); });
+                    const span = document.createElement('span');
+                    span.textContent = range.toString() || 'item';
+                    range.deleteContents();
+                    label.appendChild(cb);
+                    label.appendChild(span);
+                    range.insertNode(label);
+                    // Move cursor after
+                    range.setStartAfter(label);
+                    range.collapse(true);
+                    cbSel.removeAllRanges();
+                    cbSel.addRange(range);
+                }
+                break;
+            }
             case 'hr':
                 document.execCommand('insertHorizontalRule');
                 break;
