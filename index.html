@@ -429,11 +429,13 @@
             <div id="editor-active" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden">
                 <div class="editor-fixed">
                     <div class="editor-toolbar">
-                        <span style="font-family:var(--mono);font-size:10px;color:var(--text-faint)" id="editor-meta"></span>
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <button class="btn btn-small btn-danger" onclick="deleteCurrentNote()">Delete</button>
+                            <span style="font-family:var(--mono);font-size:10px;color:var(--text-faint)" id="editor-meta"></span>
+                        </div>
                         <div style="display:flex;gap:8px;align-items:center">
                             <span id="sync-indicator" class="sync-status" style="color:var(--text-faint)"></span>
                             <button class="btn btn-small btn-primary" onclick="saveNote()" id="sync-btn">Sync</button>
-                            <button class="btn btn-small btn-danger" onclick="deleteCurrentNote()">Delete</button>
                             <button class="btn btn-small btn-secondary" onclick="closeEditor()" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                         </div>
                     </div>
