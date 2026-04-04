@@ -221,28 +221,27 @@
             color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.75;
             outline: none;
         }
-        .editor-preview h1 { font-family: var(--display); font-size: 24px; font-weight: 700; color: var(--text); margin: 20px 0 10px; letter-spacing: -0.3px; }
-        .editor-preview h2 { font-family: var(--display); font-size: 20px; font-weight: 600; color: var(--text); margin: 18px 0 8px; }
-        .editor-preview h3 { font-family: var(--sans); font-size: 16px; font-weight: 600; color: var(--text); margin: 16px 0 6px; }
-        .editor-preview p { margin: 8px 0; }
+        /* Line-type styles for markdown-backed visual editor */
+        .editor-preview .md-h1 { font-family: var(--display); font-size: 24px; font-weight: 700; color: var(--text); margin: 16px 0 8px; letter-spacing: -0.3px; }
+        .editor-preview .md-h2 { font-family: var(--display); font-size: 20px; font-weight: 600; color: var(--text); margin: 14px 0 6px; }
+        .editor-preview .md-h3 { font-family: var(--sans); font-size: 16px; font-weight: 600; color: var(--text); margin: 12px 0 4px; }
+        .editor-preview .md-p { margin: 2px 0; min-height: 1.75em; }
+        .editor-preview .md-quote { border-left: 3px solid var(--accent-dim); padding: 2px 16px; margin: 2px 0; color: var(--text-dim); font-style: italic; }
+        .editor-preview .md-li { margin: 2px 0; padding-left: 20px; position: relative; }
+        .editor-preview .md-li::before { content: '\2022'; position: absolute; left: 6px; color: var(--text-dim); }
+        .editor-preview .md-ol { margin: 2px 0; padding-left: 24px; position: relative; }
+        .editor-preview .md-ol::before { content: attr(data-num) '.'; position: absolute; left: 4px; color: var(--text-dim); font-size: 14px; }
+        .editor-preview .md-hr { margin: 8px 0; }
+        .editor-preview .md-hr hr { border: none; border-top: 1px solid var(--border); }
+        .editor-preview .md-checkbox { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+        .editor-preview .md-cb { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+        .editor-preview .md-cb-text { flex: 1; }
+        .editor-preview .md-cb-done { text-decoration: line-through; opacity: 0.5; }
+        .editor-preview pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin: 8px 0; overflow-x: auto; }
+        .editor-preview pre code { font-family: var(--mono); font-size: 13px; color: var(--text); }
         .editor-preview strong { color: var(--text); font-weight: 600; }
         .editor-preview em { color: var(--text-dim); font-style: italic; }
-        .editor-preview code {
-            font-family: var(--mono); font-size: 13px; background: var(--surface2);
-            padding: 2px 6px; border-radius: 4px; color: var(--accent);
-        }
-        .editor-preview pre {
-            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-            padding: 14px 16px; margin: 12px 0; overflow-x: auto;
-        }
-        .editor-preview pre code { background: none; padding: 0; font-size: 13px; color: var(--text); }
-        .editor-preview blockquote {
-            border-left: 3px solid var(--accent-dim); padding: 4px 16px; margin: 12px 0;
-            color: var(--text-dim); font-style: italic;
-        }
-        .editor-preview ul, .editor-preview ol { padding-left: 24px; margin: 8px 0; }
-        .editor-preview li { margin: 4px 0; }
-        .editor-preview hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+        .editor-preview code { font-family: var(--mono); font-size: 13px; background: var(--surface2); padding: 2px 6px; border-radius: 4px; color: var(--accent); }
         .editor-preview a { color: var(--accent); text-decoration: none; }
         .editor-preview a:hover { text-decoration: underline; }
         .editor-preview[contenteditable]:empty::before {
@@ -407,7 +406,7 @@
                 <svg width="14" height="14" viewBox="0 0 512 512" fill="none" style="vertical-align:middle"><path d="M256 72L400 156V324L256 408L112 324V156Z" fill="none" stroke="currentColor" stroke-width="40" stroke-linejoin="round"/></svg>
             </button>
             <button class="btn btn-small btn-secondary" onclick="toggleSettings()" id="settings-toggle" title="Settings">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="40" stroke-linejoin="round" style="vertical-align:middle"><circle cx="256" cy="256" r="80"/><path d="M256 56v48M256 408v48M100 100l34 34M378 378l34 34M56 256h48M408 256h48M100 412l34-34M378 134l34-34"/></svg>
             </button>
         </div>
     </div>
@@ -618,7 +617,7 @@ function generateQrSvg(text, size) {
     import init, * as r2 from './pkg/r2_wasm.js';
 
     // ── Version ──
-    const NK_VERSION = '0.2.1';
+    const NK_VERSION = '0.3.0';
 
     // ── CBOR helper: read unsigned integer from any major type ──
     // majorHint: if provided, mask off that major type from the first byte
@@ -957,7 +956,7 @@ function generateQrSvg(text, size) {
         } catch (e) { console.warn('Frame decode failed:', e); }
     }
 
-    // ── Auto-Save & Dirty Tracking ──
+    // ── Auto-Save and Dirty Tracking ──
     function markDirty() {
         if (!currentNoteId) return;
         isDirty = true;
@@ -965,6 +964,15 @@ function generateQrSvg(text, size) {
         if (autoSaveTimer) clearTimeout(autoSaveTimer);
         autoSaveTimer = setTimeout(() => { if (isDirty) saveNote(); }, AUTO_SAVE_DELAY);
     }
+
+    // ══════════════════════════════════════════════════════════════
+    // Markdown-backed visual editor
+    // Markdown string is the single source of truth (hidden textarea).
+    // Visual div renders FROM markdown. User edits are intercepted
+    // and applied as markdown string operations. No HTML-to-markdown.
+    // ══════════════════════════════════════════════════════════════
+
+    let editorMarkdown = ''; // live markdown content for visual mode
     function updateSyncIndicator(state) {
         const el = document.getElementById('sync-indicator');
         if (!el) return;
@@ -986,101 +994,293 @@ function generateQrSvg(text, size) {
         }
     }
 
-    // ── Markdown Renderer ──
-    function renderMarkdown(src) {
-        let html = escHtml(src);
-        // Code blocks (``` ... ```)
-        html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
-            `<pre><code>${code.trim()}</code></pre>`);
-        // Headings
-        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-        html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-        html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-        // Horizontal rule
-        html = html.replace(/^---$/gm, '<hr>');
-        // Blockquote
-        html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
-        // Bold and italic
-        html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        // Inline code
-        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-        // Links
-        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-        // Checkboxes (must be before unordered lists)
-        html = html.replace(/^- \[x\] (.+)$/gm, '<div class="cb-row" style="display:flex;align-items:center;gap:8px;padding:2px 0"><input type="checkbox" checked style="width:16px;height:16px;flex-shrink:0;cursor:pointer" onchange="this.nextElementSibling.style.textDecoration=this.checked?\'line-through\':\'none\';this.nextElementSibling.style.opacity=this.checked?\'0.5\':\'1\';markDirty()"><span contenteditable="true" style="text-decoration:line-through;opacity:0.5;flex:1">$1</span></div>');
-        html = html.replace(/^- \[ \] (.+)$/gm, '<div class="cb-row" style="display:flex;align-items:center;gap:8px;padding:2px 0"><input type="checkbox" style="width:16px;height:16px;flex-shrink:0;cursor:pointer" onchange="this.nextElementSibling.style.textDecoration=this.checked?\'line-through\':\'none\';this.nextElementSibling.style.opacity=this.checked?\'0.5\':\'1\';markDirty()"><span contenteditable="true" style="flex:1">$1</span></div>');
-        // Unordered lists
-        html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
-        html = html.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
-        // Ordered lists
-        html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-        // Paragraphs (double newline)
-        html = html.replace(/\n\n/g, '</p><p>');
-        html = html.replace(/\n/g, '<br>');
-        html = `<p>${html}</p>`;
-        // Clean up empty paragraphs
-        html = html.replace(/<p>\s*<\/p>/g, '');
-        html = html.replace(/<p>\s*(<h[123]>)/g, '$1');
-        html = html.replace(/(<\/h[123]>)\s*<\/p>/g, '$1');
-        html = html.replace(/<p>\s*(<pre>)/g, '$1');
-        html = html.replace(/(<\/pre>)\s*<\/p>/g, '$1');
-        html = html.replace(/<p>\s*(<hr>)\s*<\/p>/g, '$1');
-        html = html.replace(/<p>\s*(<ul>)/g, '$1');
-        html = html.replace(/(<\/ul>)\s*<\/p>/g, '$1');
-        html = html.replace(/<p>\s*(<blockquote>)/g, '$1');
-        html = html.replace(/(<\/blockquote>)\s*<\/p>/g, '$1');
-        return html;
+    // ── Markdown-Backed Visual Renderer ──
+    // Renders markdown string to visual HTML with line-position markers.
+    // Each line gets data-line and data-offset for cursor mapping.
+
+    function renderInline(text) {
+        let h = escHtml(text);
+        h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+        h = h.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        return h || '<br>'; // empty line needs <br> to be visible
     }
 
-    // ── HTML to Markdown Converter ──
-    function htmlToMarkdown(html) {
-        // Work on a temporary div to use DOM parsing
-        const div = document.createElement('div');
-        div.innerHTML = html;
+    function renderToVisual(md, container) {
+        const lines = md.split('\n');
+        let offset = 0;
+        let inCodeBlock = false;
+        let codeLines = [], codeStart = 0, codeLang = '';
+        const els = [];
 
-        function convert(node) {
-            if (node.nodeType === 3) return node.textContent; // text node
-            if (node.nodeType !== 1) return '';
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
 
-            const tag = node.tagName.toLowerCase();
-            const inner = () => Array.from(node.childNodes).map(convert).join('');
-
-            switch (tag) {
-                case 'h1': return `# ${inner()}\n\n`;
-                case 'h2': return `## ${inner()}\n\n`;
-                case 'h3': return `### ${inner()}\n\n`;
-                case 'strong': case 'b': return `**${inner()}**`;
-                case 'em': case 'i': return `*${inner()}*`;
-                case 'code':
-                    if (node.parentElement && node.parentElement.tagName === 'PRE')
-                        return inner(); // handled by pre
-                    return `\`${inner()}\``;
-                case 'pre': return `\`\`\`\n${node.textContent.trim()}\n\`\`\`\n\n`;
-                case 'blockquote': return inner().trim().split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
-                case 'ul': return Array.from(node.children).map(li => `- ${convert(li).trim()}`).join('\n') + '\n\n';
-                case 'ol': return Array.from(node.children).map((li, i) => `${i+1}. ${convert(li).trim()}`).join('\n') + '\n\n';
-                case 'li': return inner();
-                case 'a': return `[${inner()}](${node.getAttribute('href') || ''})`;
-                case 'input': return ''; // checkbox handled by parent div
-                case 'hr': return `---\n\n`;
-                case 'br': return '\n';
-                case 'div':
-                case 'p': {
-                    const cb = node.querySelector(':scope > input[type="checkbox"]');
-                    const span = node.querySelector(':scope > span');
-                    if (cb && span) {
-                        return `\n- [${cb.checked ? 'x' : ' '}] ${span.textContent}`;
-                    }
-                    return `\n${inner()}`;
+            // Code block handling
+            if (line.startsWith('```')) {
+                if (inCodeBlock) {
+                    // End code block
+                    const pre = document.createElement('pre');
+                    pre.setAttribute('data-line', codeStart);
+                    pre.setAttribute('data-offset', offset - codeLines.join('\n').length - 4);
+                    const code = document.createElement('code');
+                    code.textContent = codeLines.join('\n');
+                    pre.appendChild(code);
+                    els.push(pre);
+                    inCodeBlock = false;
+                    codeLines = [];
+                } else {
+                    inCodeBlock = true;
+                    codeStart = i;
+                    codeLang = line.slice(3);
                 }
-                default: return inner();
+                offset += line.length + 1;
+                continue;
             }
+            if (inCodeBlock) {
+                codeLines.push(line);
+                offset += line.length + 1;
+                continue;
+            }
+
+            const el = document.createElement('div');
+            el.setAttribute('data-line', i);
+            el.setAttribute('data-offset', offset);
+
+            if (line.match(/^### (.+)/)) {
+                el.innerHTML = renderInline(line.slice(4));
+                el.className = 'md-h3';
+            } else if (line.match(/^## (.+)/)) {
+                el.innerHTML = renderInline(line.slice(3));
+                el.className = 'md-h2';
+            } else if (line.match(/^# (.+)/)) {
+                el.innerHTML = renderInline(line.slice(2));
+                el.className = 'md-h1';
+            } else if (line === '---') {
+                el.innerHTML = '<hr>';
+                el.className = 'md-hr';
+            } else if (line.match(/^> (.+)/)) {
+                el.innerHTML = renderInline(line.slice(2));
+                el.className = 'md-quote';
+            } else if (line.match(/^- \[x\] (.+)/)) {
+                const text = line.slice(6);
+                el.className = 'md-checkbox';
+                el.innerHTML = '<input type="checkbox" checked class="md-cb"><span class="md-cb-text md-cb-done">' + renderInline(text) + '</span>';
+            } else if (line.match(/^- \[ \] (.+)/)) {
+                const text = line.slice(6);
+                el.className = 'md-checkbox';
+                el.innerHTML = '<input type="checkbox" class="md-cb"><span class="md-cb-text">' + renderInline(text) + '</span>';
+            } else if (line.match(/^[-*] (.+)/)) {
+                el.innerHTML = renderInline(line.slice(2));
+                el.className = 'md-li';
+            } else if (line.match(/^\d+\. (.+)/)) {
+                const m = line.match(/^(\d+)\. (.+)/);
+                el.innerHTML = renderInline(m[2]);
+                el.className = 'md-ol';
+                el.setAttribute('data-num', m[1]);
+            } else {
+                el.innerHTML = renderInline(line);
+                el.className = 'md-p';
+            }
+
+            els.push(el);
+            offset += line.length + 1;
         }
 
-        return Array.from(div.childNodes).map(convert).join('')
-            .replace(/\n{4,}/g, '\n\n\n').trim();
+        container.innerHTML = '';
+        els.forEach(el => container.appendChild(el));
+    }
+
+    // ── Cursor Position Mapping ──
+
+    function getMarkdownPrefix(line) {
+        const m = line.match(/^(#{1,3} |[-*] \[[ x]\] |[-*] |\d+\. |> )/);
+        return m ? m[1] : '';
+    }
+
+    function visualToMdPos(container) {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return null;
+        let node = sel.anchorNode;
+        if (node.nodeType === 3) node = node.parentElement;
+        // Walk up to find data-line element
+        let lineEl = node;
+        while (lineEl && !lineEl.hasAttribute('data-line')) lineEl = lineEl.parentElement;
+        if (!lineEl) return null;
+
+        const lineOffset = parseInt(lineEl.dataset.offset);
+        const lineIndex = parseInt(lineEl.dataset.line);
+        const line = editorMarkdown.split('\n')[lineIndex] || '';
+        const prefix = getMarkdownPrefix(line);
+
+        // Character offset within the visual line
+        const range = document.createRange();
+        range.setStart(lineEl, 0);
+        range.setEnd(sel.anchorNode, sel.anchorOffset);
+        const charInVisual = range.toString().length;
+
+        return lineOffset + prefix.length + charInVisual;
+    }
+
+    function mdPosToVisual(container, mdPos) {
+        const lines = editorMarkdown.split('\n');
+        let offset = 0;
+        for (let i = 0; i < lines.length; i++) {
+            if (offset + lines[i].length >= mdPos || i === lines.length - 1) {
+                const charInLine = mdPos - offset;
+                const prefix = getMarkdownPrefix(lines[i]);
+                const visualChar = Math.max(0, charInLine - prefix.length);
+                const el = container.querySelector('[data-line="' + i + '"]');
+                if (!el) return;
+                // Walk text nodes to place cursor
+                const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+                let count = 0, textNode;
+                while (textNode = walker.nextNode()) {
+                    if (count + textNode.length >= visualChar) {
+                        try {
+                            const sel = window.getSelection();
+                            const range = document.createRange();
+                            range.setStart(textNode, Math.min(visualChar - count, textNode.length));
+                            range.collapse(true);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        } catch (e) {}
+                        return;
+                    }
+                    count += textNode.length;
+                }
+                // Fallback: place at end of element
+                try {
+                    const sel = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(el);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (e) {}
+                return;
+            }
+            offset += lines[i].length + 1;
+        }
+    }
+
+    // ── Markdown String Operations ──
+
+    function mdInsert(pos, text) {
+        editorMarkdown = editorMarkdown.slice(0, pos) + text + editorMarkdown.slice(pos);
+    }
+    function mdDelete(pos, len) {
+        if (pos < 0) { len += pos; pos = 0; }
+        if (len <= 0) return;
+        editorMarkdown = editorMarkdown.slice(0, pos) + editorMarkdown.slice(pos + len);
+    }
+    function mdFindLineStart(pos) {
+        const i = editorMarkdown.lastIndexOf('\n', pos - 1);
+        return i + 1;
+    }
+    function mdGetLine(pos) {
+        const start = mdFindLineStart(pos);
+        const end = editorMarkdown.indexOf('\n', start);
+        return editorMarkdown.substring(start, end === -1 ? editorMarkdown.length : end);
+    }
+
+    function syncToTextarea() {
+        document.getElementById('editor-content').value = editorMarkdown;
+    }
+
+    // ── Visual Editor Input Handler ──
+    // Intercepts ALL input and applies to markdown string.
+
+    function setupVisualEditor(container) {
+        container.addEventListener('beforeinput', function(e) {
+            e.preventDefault();
+            const pos = visualToMdPos(container);
+            if (pos === null) return;
+            let newPos = pos;
+
+            switch (e.inputType) {
+                case 'insertText':
+                    mdInsert(pos, e.data);
+                    newPos = pos + e.data.length;
+                    break;
+                case 'insertParagraph':
+                case 'insertLineBreak': {
+                    const lineStart = editorMarkdown.lastIndexOf('\n', pos - 1) + 1;
+                    const currentLine = editorMarkdown.substring(lineStart, pos);
+                    const prefix = getMarkdownPrefix(currentLine);
+                    const contentAfterPrefix = currentLine.slice(prefix.length);
+
+                    if (prefix && contentAfterPrefix.trim() === '') {
+                        // Empty formatted line (e.g. just "- " or "> ") - clear the prefix
+                        mdDelete(lineStart, currentLine.length);
+                        newPos = lineStart;
+                    } else if (prefix && prefix !== '## ' && prefix !== '### ' && prefix !== '# ') {
+                        // Continue list/quote/checkbox prefix on new line
+                        const contPrefix = prefix.match(/^\d+\. /)
+                            ? (parseInt(prefix) + 1) + '. '
+                            : prefix.replace(/\[x\]/, '[ ]'); // new checkbox unchecked
+                        mdInsert(pos, '\n' + contPrefix);
+                        newPos = pos + 1 + contPrefix.length;
+                    } else {
+                        // Normal Enter - just newline, no prefix carry
+                        mdInsert(pos, '\n');
+                        newPos = pos + 1;
+                    }
+                    break;
+                }
+                case 'deleteContentBackward':
+                    if (pos > 0) { mdDelete(pos - 1, 1); newPos = pos - 1; }
+                    break;
+                case 'deleteContentForward':
+                    mdDelete(pos, 1);
+                    newPos = pos;
+                    break;
+                case 'deleteWordBackward': {
+                    const before = editorMarkdown.slice(0, pos);
+                    const m = before.match(/\S+\s*$/);
+                    const delLen = m ? m[0].length : 1;
+                    mdDelete(pos - delLen, delLen);
+                    newPos = pos - delLen;
+                    break;
+                }
+                case 'insertFromPaste':
+                case 'insertFromDrop': {
+                    const text = (e.dataTransfer || e.clipboardData || {getData:()=>''}).getData('text/plain') || '';
+                    if (text) { mdInsert(pos, text); newPos = pos + text.length; }
+                    break;
+                }
+                default:
+                    return; // Don't re-render for unhandled types
+            }
+
+            syncToTextarea();
+            renderToVisual(editorMarkdown, container);
+            mdPosToVisual(container, newPos);
+            markDirty();
+        });
+
+        // Handle checkbox clicks
+        container.addEventListener('click', function(e) {
+            if (e.target.classList.contains('md-cb')) {
+                e.preventDefault();
+                const lineEl = e.target.closest('[data-offset]');
+                if (!lineEl) return;
+                const lineOff = parseInt(lineEl.dataset.offset);
+                const checked = !e.target.checked; // before toggle
+                if (checked) {
+                    // Uncheck: [x] → [ ]
+                    editorMarkdown = editorMarkdown.slice(0, lineOff + 3) + ' ' + editorMarkdown.slice(lineOff + 4);
+                } else {
+                    // Check: [ ] → [x]
+                    editorMarkdown = editorMarkdown.slice(0, lineOff + 3) + 'x' + editorMarkdown.slice(lineOff + 4);
+                }
+                syncToTextarea();
+                renderToVisual(editorMarkdown, container);
+                markDirty();
+            }
+        });
     }
 
     // ── Editor Mode Toggle ──
@@ -1094,215 +1294,132 @@ function generateQrSvg(text, size) {
         const mdBtn = document.getElementById('mode-markdown');
 
         if (mode === 'markdown') {
-            // Remember cursor as plain text offset
-            let visualOffset = 0;
-            try {
-                const sel = window.getSelection();
-                if (sel.rangeCount && visual.contains(sel.anchorNode)) {
-                    const range = document.createRange();
-                    range.setStart(visual, 0);
-                    range.setEnd(sel.anchorNode, sel.anchorOffset);
-                    visualOffset = range.toString().length;
-                }
-            } catch (e) {}
-            // Sync visual → markdown
-            textarea.value = htmlToMarkdown(visual.innerHTML);
+            textarea.value = editorMarkdown;
             visual.style.display = 'none';
             textarea.style.display = 'block';
             visualBtn.classList.remove('active');
             mdBtn.classList.add('active');
-            // Restore cursor to approximate position in markdown
-            const mdText = textarea.value.replace(/[#*`>\-\[\]\(\)]/g, '').replace(/\n/g, ' ');
-            let mdPos = 0, textPos = 0;
-            while (textPos < visualOffset && mdPos < textarea.value.length) {
-                if (/[#*`>\-\[\]\(\)\n]/.test(textarea.value[mdPos])) { mdPos++; }
-                else { mdPos++; textPos++; }
-            }
-            textarea.selectionStart = textarea.selectionEnd = mdPos;
             textarea.focus();
         } else {
-            // Remember cursor offset as plain text position
-            const cursorOffset = textarea.value.substring(0, textarea.selectionStart)
-                .replace(/[#*`>\-\[\]\(\)]/g, '').replace(/\n/g, ' ').length;
-            // Sync markdown → visual
-            visual.innerHTML = renderMarkdown(textarea.value);
+            editorMarkdown = textarea.value;
+            renderToVisual(editorMarkdown, visual);
             textarea.style.display = 'none';
             visual.style.display = 'block';
             visualBtn.classList.add('active');
             mdBtn.classList.remove('active');
-            // Restore cursor to approximate position
             visual.focus();
-            try {
-                const walker = document.createTreeWalker(visual, NodeFilter.SHOW_TEXT);
-                let charCount = 0, node, targetNode = null, targetOffset = 0;
-                while (node = walker.nextNode()) {
-                    if (charCount + node.length >= cursorOffset) {
-                        targetNode = node;
-                        targetOffset = cursorOffset - charCount;
-                        break;
-                    }
-                    charCount += node.length;
-                }
-                if (targetNode) {
-                    const sel = window.getSelection();
-                    const range = document.createRange();
-                    range.setStart(targetNode, Math.min(targetOffset, targetNode.length));
-                    range.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                }
-            } catch (e) { /* cursor placement is best-effort */ }
         }
     };
 
-    // Get current content as markdown (from whichever mode is active)
     function getCurrentMarkdown() {
         if (editorMode === 'markdown') {
             return document.getElementById('editor-content').value;
         }
-        return htmlToMarkdown(document.getElementById('editor-visual').innerHTML);
+        return editorMarkdown;
     }
 
-    // ── Formatting Commands ──
-    function insertAtCursor(textarea, text) {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const before = textarea.value.substring(0, start);
-        const selected = textarea.value.substring(start, end);
-        const after = textarea.value.substring(end);
-        textarea.value = before + text.replace('$SEL', selected) + after;
-        const newPos = before.length + text.replace('$SEL', selected).length;
-        textarea.selectionStart = textarea.selectionEnd = newPos;
-        textarea.focus();
-    }
+    // ── Formatting Commands (unified - always operates on markdown) ──
 
     window.fmt = function(type) {
-        if (editorMode === 'markdown') {
-            // Insert markdown syntax at cursor in textarea
-            const ta = document.getElementById('editor-content');
-            const sel = ta.value.substring(ta.selectionStart, ta.selectionEnd);
-            switch (type) {
-                case 'paragraph': break; // no-op in markdown
-                case 'heading': insertAtCursor(ta, '## ' + (sel || '')); break;
-                case 'bold': insertAtCursor(ta, '**' + (sel || 'text') + '**'); break;
-                case 'italic': insertAtCursor(ta, '*' + (sel || 'text') + '*'); break;
-                case 'code': insertAtCursor(ta, '`' + (sel || 'code') + '`'); break;
-                case 'codeblock': insertAtCursor(ta, '```\n' + (sel || '') + '\n```'); break;
-                case 'ul': insertAtCursor(ta, '- ' + (sel || 'item')); break;
-                case 'ol': insertAtCursor(ta, '1. ' + (sel || 'item')); break;
-                case 'quote': {
-                    // Toggle: remove > prefix if present, add if not
-                    const lineStart = ta.value.lastIndexOf('\n', ta.selectionStart - 1) + 1;
-                    const line = ta.value.substring(lineStart, ta.selectionEnd || ta.selectionStart);
-                    if (line.startsWith('> ')) {
-                        ta.value = ta.value.substring(0, lineStart) + line.replace(/^> /, '') + ta.value.substring(ta.selectionEnd || ta.selectionStart);
-                        ta.selectionStart = ta.selectionEnd = lineStart + line.length - 2;
-                    } else {
-                        insertAtCursor(ta, '> ' + (sel || ''));
-                    }
-                    break;
-                }
-                case 'checkbox': insertAtCursor(ta, '- [ ] ' + (sel || 'item')); break;
-                case 'hr': insertAtCursor(ta, '\n---\n'); break;
-                case 'link':
-                    const mdUrl = prompt('URL:');
-                    if (mdUrl) insertAtCursor(ta, '[' + (sel || 'link text') + '](' + mdUrl + ')');
-                    break;
+        const visual = document.getElementById('editor-visual');
+        const ta = document.getElementById('editor-content');
+        let pos, selEnd, md;
+
+        if (editorMode === 'visual') {
+            pos = visualToMdPos(visual) || 0;
+            selEnd = pos; // TODO: selection range in visual mode
+            md = editorMarkdown;
+        } else {
+            pos = ta.selectionStart;
+            selEnd = ta.selectionEnd;
+            md = ta.value;
+        }
+
+        const selText = md.substring(pos, selEnd);
+        let newPos = pos;
+
+        function apply() {
+            if (editorMode === 'visual') {
+                editorMarkdown = md;
+                syncToTextarea();
+                renderToVisual(editorMarkdown, visual);
+                mdPosToVisual(visual, newPos);
+            } else {
+                ta.value = md;
+                ta.selectionStart = ta.selectionEnd = newPos;
+                ta.focus();
             }
             markDirty();
-            return;
         }
-
-        // Visual mode: use execCommand
-        const visual = document.getElementById('editor-visual');
-        visual.focus();
 
         switch (type) {
-            case 'paragraph':
-                document.execCommand('formatBlock', false, 'p');
-                break;
-            case 'heading':
-                document.execCommand('formatBlock', false, 'h2');
-                break;
-            case 'bold':
-                document.execCommand('bold');
-                break;
-            case 'italic':
-                document.execCommand('italic');
-                break;
-            case 'code':
-                const cSel = window.getSelection();
-                if (cSel.rangeCount) {
-                    const range = cSel.getRangeAt(0);
-                    const code = document.createElement('code');
-                    range.surroundContents(code);
-                }
-                break;
-            case 'codeblock':
-                document.execCommand('formatBlock', false, 'pre');
-                break;
-            case 'ul':
-                document.execCommand('insertUnorderedList');
-                break;
-            case 'ol':
-                document.execCommand('insertOrderedList');
-                break;
-            case 'quote': {
-                // Toggle: if already in blockquote, remove it
-                const qSel = window.getSelection();
-                const qNode = qSel.anchorNode;
-                const bq = qNode ? qNode.closest ? qNode.closest('blockquote') :
-                    qNode.parentElement ? qNode.parentElement.closest('blockquote') : null : null;
-                if (bq) {
-                    document.execCommand('formatBlock', false, 'p');
+            case 'paragraph': {
+                const ls = md.lastIndexOf('\n', pos - 1) + 1;
+                const line = md.substring(ls, md.indexOf('\n', ls) === -1 ? md.length : md.indexOf('\n', ls));
+                const pfx = getMarkdownPrefix(line);
+                if (pfx) { md = md.slice(0, ls) + line.slice(pfx.length) + md.slice(ls + line.length); newPos = pos - pfx.length; }
+                apply(); break;
+            }
+            case 'heading': {
+                const ls = md.lastIndexOf('\n', pos - 1) + 1;
+                const line = md.substring(ls, md.indexOf('\n', ls) === -1 ? md.length : md.indexOf('\n', ls));
+                if (line.startsWith('## ')) { md = md.slice(0, ls) + line.slice(3) + md.slice(ls + line.length); newPos = pos - 3; }
+                else { md = md.slice(0, ls) + '## ' + line + md.slice(ls + line.length); newPos = pos + 3; }
+                apply(); break;
+            }
+            case 'bold': {
+                if (selEnd > pos) { md = md.slice(0, pos) + '**' + selText + '**' + md.slice(selEnd); newPos = selEnd + 4; }
+                else { md = md.slice(0, pos) + '**text**' + md.slice(pos); newPos = pos + 2; }
+                apply(); break;
+            }
+            case 'italic': {
+                if (selEnd > pos) { md = md.slice(0, pos) + '*' + selText + '*' + md.slice(selEnd); newPos = selEnd + 2; }
+                else { md = md.slice(0, pos) + '*text*' + md.slice(pos); newPos = pos + 1; }
+                apply(); break;
+            }
+            case 'code': {
+                if (selEnd > pos) { md = md.slice(0, pos) + '`' + selText + '`' + md.slice(selEnd); newPos = selEnd + 2; }
+                else { md = md.slice(0, pos) + '`code`' + md.slice(pos); newPos = pos + 1; }
+                apply(); break;
+            }
+            case 'codeblock': {
+                md = md.slice(0, pos) + '```\n' + (selText || '') + '\n```' + md.slice(selEnd);
+                newPos = pos + 4;
+                apply(); break;
+            }
+            case 'ul': case 'ol': case 'quote': case 'checkbox': {
+                const ls = md.lastIndexOf('\n', pos - 1) + 1;
+                const line = md.substring(ls, md.indexOf('\n', ls) === -1 ? md.length : md.indexOf('\n', ls));
+                const prefixes = { ul: '- ', ol: '1. ', quote: '> ', checkbox: '- [ ] ' };
+                const pfx = prefixes[type];
+                if (line.startsWith(pfx)) {
+                    md = md.slice(0, ls) + line.slice(pfx.length) + md.slice(ls + line.length);
+                    newPos = pos - pfx.length;
                 } else {
-                    document.execCommand('formatBlock', false, 'blockquote');
+                    // Remove any existing prefix first
+                    const existingPfx = getMarkdownPrefix(line);
+                    const cleanLine = existingPfx ? line.slice(existingPfx.length) : line;
+                    md = md.slice(0, ls) + pfx + cleanLine + md.slice(ls + line.length);
+                    newPos = pos - existingPfx.length + pfx.length;
                 }
-                break;
+                apply(); break;
             }
-            case 'checkbox': {
-                const cbSel = window.getSelection();
-                if (cbSel.rangeCount) {
-                    const range = cbSel.getRangeAt(0);
-                    const row = document.createElement('div');
-                    row.className = 'cb-row';
-                    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:2px 0';
-                    const cb = document.createElement('input');
-                    cb.type = 'checkbox';
-                    cb.style.cssText = 'width:16px;height:16px;flex-shrink:0;cursor:pointer';
-                    cb.addEventListener('change', function() {
-                        const sp = this.nextElementSibling;
-                        sp.style.textDecoration = this.checked ? 'line-through' : 'none';
-                        sp.style.opacity = this.checked ? '0.5' : '1';
-                        markDirty();
-                    });
-                    const span = document.createElement('span');
-                    span.contentEditable = 'true';
-                    span.style.cssText = 'flex:1';
-                    span.textContent = range.toString() || 'item';
-                    range.deleteContents();
-                    row.appendChild(cb);
-                    row.appendChild(span);
-                    range.insertNode(row);
-                    // Place cursor in the span text
-                    const sel2 = window.getSelection();
-                    const r2 = document.createRange();
-                    r2.selectNodeContents(span);
-                    r2.collapse(false);
-                    sel2.removeAllRanges();
-                    sel2.addRange(r2);
-                }
-                break;
+            case 'hr': {
+                md = md.slice(0, pos) + '\n---\n' + md.slice(pos);
+                newPos = pos + 5;
+                apply(); break;
             }
-            case 'hr':
-                document.execCommand('insertHorizontalRule');
-                break;
-            case 'link':
+            case 'link': {
                 const url = prompt('URL:');
-                if (url) document.execCommand('createLink', false, url);
+                if (url) {
+                    const linkText = selEnd > pos ? selText : 'link text';
+                    md = md.slice(0, pos) + '[' + linkText + '](' + url + ')' + md.slice(selEnd);
+                    newPos = pos + linkText.length + url.length + 4;
+                    apply();
+                }
                 break;
+            }
         }
-        markDirty();
     };
 
     // ── Hive Event Processing ──
@@ -1474,7 +1591,8 @@ function generateQrSvg(text, size) {
         const n = notes[currentNoteId];
         document.getElementById('editor-title').value = n.title;
         document.getElementById('editor-content').value = n.content;
-        document.getElementById('editor-visual').innerHTML = renderMarkdown(n.content);
+        editorMarkdown = n.content || '';
+        renderToVisual(editorMarkdown, document.getElementById('editor-visual'));
         document.getElementById('editor-meta').textContent = `${n.id} \u00b7 ${timeAgo(n.updated_at)}`;
     }
     function renderEventLog() {
@@ -1980,34 +2098,13 @@ function generateQrSvg(text, size) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); newNote(); }
     });
     document.getElementById('editor-title').addEventListener('input', markDirty);
-    document.getElementById('editor-content').addEventListener('input', markDirty);
-    document.getElementById('editor-visual').addEventListener('input', markDirty);
-
-    // Intercept Enter in visual editor to insert <br> instead of splitting block elements.
-    // This prevents Chrome from creating <p>/<div> splits that double newlines in markdown.
-    document.getElementById('editor-visual').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            // Insert <br> at cursor position
-            const sel = window.getSelection();
-            if (!sel.rangeCount) return;
-            const range = sel.getRangeAt(0);
-            range.deleteContents();
-            const br = document.createElement('br');
-            range.insertNode(br);
-            // Chrome needs a second <br> at end of block to show the new line
-            if (!br.nextSibling || (br.nextSibling.nodeType === 1 && br.nextSibling.tagName === 'BR')) {
-                const br2 = document.createElement('br');
-                br.parentNode.insertBefore(br2, br.nextSibling);
-            }
-            // Move cursor after the <br>
-            range.setStartAfter(br);
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
-            markDirty();
-        }
+    document.getElementById('editor-content').addEventListener('input', function() {
+        editorMarkdown = this.value;
+        markDirty();
     });
+
+    // Set up the markdown-backed visual editor
+    setupVisualEditor(document.getElementById('editor-visual'));
     window.addEventListener('beforeunload', () => flushIfDirty());
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushIfDirty(); });
 
