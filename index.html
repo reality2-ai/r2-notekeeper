@@ -1094,10 +1094,62 @@ function generateQrSvg(text, size) {
     }
 
     // ── Cursor Position Mapping ──
+    // Handles inline formatting characters (`, **, *, [...](...))
+    // that exist in markdown but not in the visual rendering.
 
     function getMarkdownPrefix(line) {
         const m = line.match(/^(#{1,3} |[-*] \[[ x]\] |[-*] |\d+\. |> )/);
         return m ? m[1] : '';
+    }
+
+    // Build a map from visual character index → markdown character index
+    // for the content part of a line (after the prefix).
+    function buildPosMap(content) {
+        const v2m = []; // v2m[visualIndex] = markdownIndex
+        let vi = 0, mi = 0;
+        while (mi < content.length) {
+            if (content[mi] === '`') {
+                mi++; // skip opening `
+                while (mi < content.length && content[mi] !== '`') {
+                    v2m[vi++] = mi++;
+                }
+                if (mi < content.length) mi++; // skip closing `
+            } else if (content.slice(mi, mi + 3) === '***') {
+                mi += 3;
+                while (mi < content.length && content.slice(mi, mi + 3) !== '***') {
+                    v2m[vi++] = mi++;
+                }
+                if (mi < content.length) mi += 3;
+            } else if (content.slice(mi, mi + 2) === '**') {
+                mi += 2;
+                while (mi < content.length && content.slice(mi, mi + 2) !== '**') {
+                    v2m[vi++] = mi++;
+                }
+                if (mi < content.length) mi += 2;
+            } else if (content[mi] === '*' && mi + 1 < content.length && content[mi + 1] !== ' ') {
+                mi++;
+                while (mi < content.length && content[mi] !== '*') {
+                    v2m[vi++] = mi++;
+                }
+                if (mi < content.length) mi++;
+            } else if (content[mi] === '[') {
+                // Link: [text](url) - visual shows "text" only
+                const closeBracket = content.indexOf('](', mi);
+                if (closeBracket !== -1) {
+                    mi++; // skip [
+                    while (mi < closeBracket) { v2m[vi++] = mi++; }
+                    // skip ](url)
+                    const closeParen = content.indexOf(')', mi);
+                    mi = closeParen !== -1 ? closeParen + 1 : mi + 1;
+                } else {
+                    v2m[vi++] = mi++;
+                }
+            } else {
+                v2m[vi++] = mi++;
+            }
+        }
+        v2m[vi] = mi; // end position
+        return v2m;
     }
 
     function visualToMdPos(container) {
@@ -1105,7 +1157,6 @@ function generateQrSvg(text, size) {
         if (!sel.rangeCount) return null;
         let node = sel.anchorNode;
         if (node.nodeType === 3) node = node.parentElement;
-        // Walk up to find data-line element
         let lineEl = node;
         while (lineEl && !lineEl.hasAttribute('data-line')) lineEl = lineEl.parentElement;
         if (!lineEl) return null;
@@ -1114,14 +1165,17 @@ function generateQrSvg(text, size) {
         const lineIndex = parseInt(lineEl.dataset.line);
         const line = editorMarkdown.split('\n')[lineIndex] || '';
         const prefix = getMarkdownPrefix(line);
+        const content = line.slice(prefix.length);
 
-        // Character offset within the visual line
         const range = document.createRange();
         range.setStart(lineEl, 0);
         range.setEnd(sel.anchorNode, sel.anchorOffset);
         const charInVisual = range.toString().length;
 
-        return lineOffset + prefix.length + charInVisual;
+        const v2m = buildPosMap(content);
+        const mdChar = charInVisual < v2m.length ? v2m[charInVisual] : content.length;
+
+        return lineOffset + prefix.length + mdChar;
     }
 
     function mdPosToVisual(container, mdPos) {
@@ -1131,7 +1185,15 @@ function generateQrSvg(text, size) {
             if (offset + lines[i].length >= mdPos || i === lines.length - 1) {
                 const charInLine = mdPos - offset;
                 const prefix = getMarkdownPrefix(lines[i]);
-                const visualChar = Math.max(0, charInLine - prefix.length);
+                const content = lines[i].slice(prefix.length);
+                const mdCharInContent = Math.max(0, charInLine - prefix.length);
+
+                // Reverse map: markdown position → visual position
+                const v2m = buildPosMap(content);
+                let visualChar = v2m.length - 1; // default: end
+                for (let v = 0; v < v2m.length; v++) {
+                    if (v2m[v] >= mdCharInContent) { visualChar = v; break; }
+                }
                 const el = container.querySelector('[data-line="' + i + '"]');
                 if (!el) return;
                 // Walk text nodes to place cursor
