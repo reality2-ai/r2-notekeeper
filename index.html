@@ -1000,12 +1000,12 @@ function generateQrSvg(text, size) {
 
     function renderInline(text) {
         let h = escHtml(text);
-        h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+        h = h.replace(/`([^`]*)`/g, (_, c) => '<code>' + (c || '\u200B') + '</code>');
         h = h.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
         h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
         h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-        return h || '<br>'; // empty line needs <br> to be visible
+        return h || '<br>';
     }
 
     function renderToVisual(md, container) {
