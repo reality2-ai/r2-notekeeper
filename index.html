@@ -473,11 +473,15 @@
         <button class="btn btn-small btn-secondary" onclick="toggleSettings()" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="settings-section">
-        <h3>Relay</h3>
+        <h3>Wayfinder</h3>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-            <input id="settings-relay-input" class="field-input" placeholder="wss://relay.reality2.ai/r2"
+            <input id="settings-relay-input" class="field-input" placeholder="Auto-discovered or manual"
                    style="font-family:var(--mono);font-size:12px;padding:8px 12px;flex:1">
             <button class="btn btn-small btn-primary" onclick="updateRelay()">Connect</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button class="btn btn-small btn-secondary" onclick="scanForWayfinder()" style="flex:1">Scan nearby</button>
+            <button class="btn btn-small btn-secondary" onclick="document.getElementById('settings-relay-input').value='wss://relay.reality2.ai/r2'" style="flex:1">Internet relay</button>
         </div>
         <div class="settings-row">
             <span class="label">Status</span>
@@ -1807,8 +1811,104 @@ function generateQrSvg(text, size) {
         location.reload();
     };
 
+    // ── Wayfinder Discovery ──
+    // Try to find a wayfinder automatically before falling back to configured URL.
+
+    async function discoverWayfinder() {
+        // 1. Try localhost (local wayfinder running on this machine)
+        const localPorts = [21042, 21099];
+        for (const port of localPorts) {
+            const url = `ws://localhost:${port}/r2`;
+            try {
+                const ok = await probeWebSocket(url, 2000);
+                if (ok) {
+                    log.info('Auto-discovered local wayfinder at ' + url);
+                    return url;
+                }
+            } catch (e) {}
+        }
+
+        // 2. Try LAN wayfinders via HTTP probe on common ports
+        // Get our IP prefix from the page URL or known ranges
+        try {
+            const resp = await fetch('http://localhost:21042/health', { signal: AbortSignal.timeout(1000) });
+            if (resp.ok) return 'ws://localhost:21042/r2';
+        } catch (e) {}
+        try {
+            const resp = await fetch('http://localhost:21099/health', { signal: AbortSignal.timeout(1000) });
+            if (resp.ok) return 'ws://localhost:21099/r2';
+        } catch (e) {}
+
+        // 3. No local wayfinder found
+        return null;
+    }
+
+    function probeWebSocket(url, timeoutMs) {
+        return new Promise((resolve) => {
+            const ws = new WebSocket(url);
+            const timer = setTimeout(() => { ws.close(); resolve(false); }, timeoutMs);
+            ws.onopen = () => { clearTimeout(timer); ws.close(); resolve(true); };
+            ws.onerror = () => { clearTimeout(timer); resolve(false); };
+        });
+    }
+
+    function connectToWayfinder(url) {
+        if (!member) return;
+        localStorage.setItem(SK_RELAY_URL, url);
+        relay = new R2RelayTransport(url, member);
+        relay.onFrame = (data) => {
+            if (isJoinMessage(data)) handleJoinMessage(data);
+            else handleIncomingFrame(data);
+        };
+        relay.connect();
+        document.getElementById('settings-relay-input').value = url;
+        log.info('Connected to wayfinder: ' + url);
+    }
+
+    const log = { info: (m) => console.log('[r2] ' + m) };
+
+    // Scan for nearby wayfinders via Web Bluetooth (if available)
+    window.scanForWayfinder = async function() {
+        const statusEl = document.getElementById('settings-relay-status');
+
+        // First try localhost probe (no user interaction needed)
+        statusEl.textContent = 'scanning localhost...';
+        const local = await discoverWayfinder();
+        if (local) {
+            document.getElementById('settings-relay-input').value = local;
+            statusEl.textContent = 'found local wayfinder';
+            updateRelay();
+            return;
+        }
+
+        // Try Web Bluetooth if available
+        if (navigator.bluetooth) {
+            statusEl.textContent = 'scanning bluetooth...';
+            try {
+                // R2 beacon service UUID (to be standardised)
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'R2-' }],
+                    optionalServices: ['0000b200-0000-1000-8000-00805f9b34fb']
+                });
+                if (device) {
+                    statusEl.textContent = 'found: ' + device.name;
+                    // TODO: read GATT characteristic to get WebSocket URL
+                    log.info('BLE device found: ' + device.name);
+                }
+            } catch (e) {
+                if (e.name !== 'NotFoundError') {
+                    statusEl.textContent = 'scan failed';
+                } else {
+                    statusEl.textContent = 'no devices found';
+                }
+            }
+        } else {
+            statusEl.textContent = 'no local wayfinder found';
+        }
+    };
+
     // ── Init ──
-    function initApp() {
+    async function initApp() {
         tgShort = hexShort(member.trust_group_id);
         if (window._r2) { window._r2.member = member; window._r2.trustGroup = trustGroup; }
         document.getElementById('join-screen').style.display = 'none';
@@ -1818,14 +1918,17 @@ function generateQrSvg(text, size) {
         document.getElementById('app-version').textContent = 'v' + NK_VERSION;
         loadNotes(); loadEvents();
         renderNoteList(); renderEditor(); renderEventLog();
-        const relayUrl = localStorage.getItem(SK_RELAY_URL);
-        if (relayUrl && !checkRelayUrl(relayUrl)) {
-            relay = new R2RelayTransport(relayUrl, member);
-            relay.onFrame = (data) => {
-                if (isJoinMessage(data)) handleJoinMessage(data);
-                else handleIncomingFrame(data);
-            };
-            relay.connect();
+
+        // Auto-discover wayfinder
+        const savedUrl = localStorage.getItem(SK_RELAY_URL);
+        const discovered = await discoverWayfinder();
+
+        if (discovered) {
+            // Found a local wayfinder - use it (prefer over saved URL)
+            connectToWayfinder(discovered);
+        } else if (savedUrl && !checkRelayUrl(savedUrl)) {
+            // Fall back to saved URL (internet relay)
+            connectToWayfinder(savedUrl);
         }
     }
 
