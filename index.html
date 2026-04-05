@@ -1288,7 +1288,7 @@ function generateQrSvg(text, size) {
         container.innerHTML = active.map(n => `
             <div class="note-card ${n.id === currentNoteId ? 'active' : ''}" onclick="selectNote('${n.id}')">
                 <div class="title">${escHtml(n.title || 'Untitled')}</div>
-                <div class="preview">${escHtml((n.content || '').substring(0, 120))}</div>
+                <div class="preview">${escHtml((n.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 120))}</div>
                 <div class="meta">${timeAgo(n.updated_at)}</div>
             </div>
         `).join('');
