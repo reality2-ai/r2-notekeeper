@@ -1093,34 +1093,42 @@ function generateQrSvg(text, size) {
     }
 
     // Re-decorate the editor content while preserving cursor position.
-    function refreshDecorations() {
-        const editor = document.getElementById('md-editor');
-        // Save cursor as text offset from start
+    // Save cursor as {lineIndex, charOffset} within the editor
+    function saveCursorPos(editor) {
         const sel = window.getSelection();
-        let cursorOffset = 0;
-        if (sel.rangeCount) {
-            const range = sel.getRangeAt(0).cloneRange();
-            range.selectNodeContents(editor);
-            range.setEnd(sel.anchorNode, sel.anchorOffset);
-            cursorOffset = range.toString().length;
-        }
-        // Get current markdown and re-render
-        const md = getEditorMarkdown();
-        document.getElementById('editor-content').value = md;
-        renderLiveEditor(md, editor);
-        // Restore cursor
-        restoreCursor(editor, cursorOffset);
+        if (!sel.rangeCount) return null;
+        const anchor = sel.anchorNode;
+        // Find which md-line div we're in
+        let lineDiv = anchor.nodeType === 3 ? anchor.parentElement : anchor;
+        while (lineDiv && !lineDiv.classList?.contains('md-line')) lineDiv = lineDiv.parentElement;
+        if (!lineDiv || !lineDiv.parentElement) return null;
+        // Line index
+        const lines = Array.from(editor.querySelectorAll('.md-line'));
+        const lineIndex = lines.indexOf(lineDiv);
+        if (lineIndex === -1) return null;
+        // Character offset within the line
+        const range = document.createRange();
+        range.setStart(lineDiv, 0);
+        range.setEnd(sel.anchorNode, sel.anchorOffset);
+        const charOffset = range.toString().length;
+        return { lineIndex, charOffset };
     }
 
-    function restoreCursor(container, offset) {
-        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    // Restore cursor to {lineIndex, charOffset}
+    function restoreCursorPos(editor, pos) {
+        if (!pos) return;
+        const lines = editor.querySelectorAll('.md-line');
+        if (pos.lineIndex >= lines.length) return;
+        const lineDiv = lines[pos.lineIndex];
+        // Walk text nodes within this line to find the right offset
+        const walker = document.createTreeWalker(lineDiv, NodeFilter.SHOW_TEXT);
         let count = 0, node;
         while (node = walker.nextNode()) {
-            if (count + node.length >= offset) {
+            if (count + node.length >= pos.charOffset) {
                 try {
                     const sel = window.getSelection();
                     const range = document.createRange();
-                    range.setStart(node, Math.min(offset - count, node.length));
+                    range.setStart(node, Math.min(pos.charOffset - count, node.length));
                     range.collapse(true);
                     sel.removeAllRanges();
                     sel.addRange(range);
@@ -1128,8 +1136,25 @@ function generateQrSvg(text, size) {
                 return;
             }
             count += node.length;
-            count++; // account for newline between lines
         }
+        // Fallback: end of line
+        try {
+            const sel = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(lineDiv);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } catch (e) {}
+    }
+
+    function refreshDecorations() {
+        const editor = document.getElementById('md-editor');
+        const pos = saveCursorPos(editor);
+        const md = getEditorMarkdown();
+        document.getElementById('editor-content').value = md;
+        renderLiveEditor(md, editor);
+        restoreCursorPos(editor, pos);
     }
 
     // Set up the live editor
