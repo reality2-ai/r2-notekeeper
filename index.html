@@ -473,14 +473,14 @@
         <button class="btn btn-small btn-secondary" onclick="toggleSettings()" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="settings-section">
-        <h3>Wayfinder</h3>
+        <h3>Hive</h3>
         <div style="display:flex;gap:8px;margin-bottom:8px">
             <input id="settings-relay-input" class="field-input" placeholder="Auto-discovered or manual"
                    style="font-family:var(--mono);font-size:12px;padding:8px 12px;flex:1">
             <button class="btn btn-small btn-primary" onclick="updateRelay()">Connect</button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-            <button class="btn btn-small btn-secondary" onclick="scanForWayfinder()" style="flex:1">Scan nearby</button>
+            <button class="btn btn-small btn-secondary" onclick="scanForHive()" style="flex:1">Scan nearby</button>
             <button class="btn btn-small btn-secondary" onclick="document.getElementById('settings-relay-input').value='wss://relay.reality2.ai/r2'" style="flex:1">Internet relay</button>
         </div>
         <div class="settings-row">
@@ -1811,11 +1811,11 @@ function generateQrSvg(text, size) {
         location.reload();
     };
 
-    // ── Wayfinder Discovery ──
-    // Try to find a wayfinder automatically before falling back to configured URL.
+    // ── Hive Discovery ──
+    // Try to find a hive automatically before falling back to configured URL.
 
-    async function discoverWayfinder() {
-        // Probe localhost on common ports. Prefer wayfinder over plain relay.
+    async function discoverHive() {
+        // Probe localhost on common ports. Prefer hive over plain relay.
         const ports = [21042, 21099];
         let fallbackRelay = null;
         for (const port of ports) {
@@ -1826,20 +1826,20 @@ function generateQrSvg(text, size) {
                     try {
                         const data = await resp.json();
                         if (data.status === 'ok') {
-                            log.info('Auto-discovered local wayfinder at ' + url);
+                            log.info('Auto-discovered local hive at ' + url);
                             return url;
                         }
                     } catch (e) {}
-                    // Not a wayfinder (plain relay) - use as fallback
+                    // Not a hive (plain relay) - use as fallback
                     if (!fallbackRelay) fallbackRelay = url;
                 }
             } catch (e) {}
         }
-        if (fallbackRelay) log.info('Found local relay (not wayfinder) at ' + fallbackRelay);
+        if (fallbackRelay) log.info('Found local relay (not hive) at ' + fallbackRelay);
         return fallbackRelay;
     }
 
-    function connectToWayfinder(url) {
+    function connectToHive(url) {
         if (!member) return;
         localStorage.setItem(SK_RELAY_URL, url);
         relay = new R2RelayTransport(url, member);
@@ -1849,21 +1849,21 @@ function generateQrSvg(text, size) {
         };
         relay.connect();
         document.getElementById('settings-relay-input').value = url;
-        log.info('Connected to wayfinder: ' + url);
+        log.info('Connected to hive: ' + url);
     }
 
     const log = { info: (m) => console.log('[r2] ' + m) };
 
-    // Scan for nearby wayfinders via Web Bluetooth (if available)
-    window.scanForWayfinder = async function() {
+    // Scan for nearby hives via Web Bluetooth (if available)
+    window.scanForHive = async function() {
         const statusEl = document.getElementById('settings-relay-status');
 
         // First try localhost probe (no user interaction needed)
         statusEl.textContent = 'scanning localhost...';
-        const local = await discoverWayfinder();
+        const local = await discoverHive();
         if (local) {
             document.getElementById('settings-relay-input').value = local;
-            statusEl.textContent = 'found local wayfinder';
+            statusEl.textContent = 'found local hive';
             updateRelay();
             return;
         }
@@ -1890,7 +1890,7 @@ function generateQrSvg(text, size) {
                 }
             }
         } else {
-            statusEl.textContent = 'no local wayfinder found';
+            statusEl.textContent = 'no local hive found';
         }
     };
 
@@ -1906,16 +1906,16 @@ function generateQrSvg(text, size) {
         loadNotes(); loadEvents();
         renderNoteList(); renderEditor(); renderEventLog();
 
-        // Auto-discover wayfinder
+        // Auto-discover hive
         const savedUrl = localStorage.getItem(SK_RELAY_URL);
-        const discovered = await discoverWayfinder();
+        const discovered = await discoverHive();
 
         if (discovered) {
-            // Found a local wayfinder - use it (prefer over saved URL)
-            connectToWayfinder(discovered);
+            // Found a local hive - use it (prefer over saved URL)
+            connectToHive(discovered);
         } else if (savedUrl && !checkRelayUrl(savedUrl)) {
             // Fall back to saved URL (internet relay)
-            connectToWayfinder(savedUrl);
+            connectToHive(savedUrl);
         }
     }
 
