@@ -1816,7 +1816,7 @@ function generateQrSvg(text, size) {
 
     async function discoverWayfinder() {
         // Probe localhost on common wayfinder ports via HTTP health check
-        const ports = [21042, 21099];
+        const ports = [21099, 21042];
         for (const port of ports) {
             try {
                 const resp = await fetch(`http://localhost:${port}/health`, { signal: AbortSignal.timeout(1500) });
