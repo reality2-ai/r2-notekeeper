@@ -1815,41 +1815,19 @@ function generateQrSvg(text, size) {
     // Try to find a wayfinder automatically before falling back to configured URL.
 
     async function discoverWayfinder() {
-        // 1. Try localhost (local wayfinder running on this machine)
-        const localPorts = [21042, 21099];
-        for (const port of localPorts) {
-            const url = `ws://localhost:${port}/r2`;
+        // Probe localhost on common wayfinder ports via HTTP health check
+        const ports = [21042, 21099];
+        for (const port of ports) {
             try {
-                const ok = await probeWebSocket(url, 2000);
-                if (ok) {
+                const resp = await fetch(`http://localhost:${port}/health`, { signal: AbortSignal.timeout(1500) });
+                if (resp.ok) {
+                    const url = `ws://localhost:${port}/r2`;
                     log.info('Auto-discovered local wayfinder at ' + url);
                     return url;
                 }
             } catch (e) {}
         }
-
-        // 2. Try LAN wayfinders via HTTP probe on common ports
-        // Get our IP prefix from the page URL or known ranges
-        try {
-            const resp = await fetch('http://localhost:21042/health', { signal: AbortSignal.timeout(1000) });
-            if (resp.ok) return 'ws://localhost:21042/r2';
-        } catch (e) {}
-        try {
-            const resp = await fetch('http://localhost:21099/health', { signal: AbortSignal.timeout(1000) });
-            if (resp.ok) return 'ws://localhost:21099/r2';
-        } catch (e) {}
-
-        // 3. No local wayfinder found
         return null;
-    }
-
-    function probeWebSocket(url, timeoutMs) {
-        return new Promise((resolve) => {
-            const ws = new WebSocket(url);
-            const timer = setTimeout(() => { ws.close(); resolve(false); }, timeoutMs);
-            ws.onopen = () => { clearTimeout(timer); ws.close(); resolve(true); };
-            ws.onerror = () => { clearTimeout(timer); resolve(false); };
-        });
     }
 
     function connectToWayfinder(url) {
