@@ -228,8 +228,9 @@
             white-space: pre-wrap; word-wrap: break-word;
         }
         .md-editor:empty::before { content: 'Start writing...'; color: var(--text-faint); pointer-events: none; }
-        /* Markdown syntax markers - dimmed */
-        .md-editor .mk { color: var(--text-faint); font-size: 0.85em; font-weight: 400; }
+        /* Markdown syntax markers - hidden unless line has cursor */
+        .md-editor .mk { font-size: 0; color: transparent; transition: font-size 0.1s, color 0.1s; }
+        .md-editor .md-line.cursor .mk { font-size: 0.85em; color: var(--text-faint); font-weight: 400; }
         /* Inline formatting rendered */
         .md-editor .md-bold { font-weight: 600; color: var(--text); }
         .md-editor .md-italic { font-style: italic; }
@@ -1155,10 +1156,32 @@ function generateQrSvg(text, size) {
         document.getElementById('editor-content').value = md;
         renderLiveEditor(md, editor);
         restoreCursorPos(editor, pos);
+        updateCursorLine(editor);
+    }
+
+    // Track which line has the cursor and add .cursor class
+    function updateCursorLine(editor) {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        let node = sel.anchorNode;
+        if (node.nodeType === 3) node = node.parentElement;
+        let lineDiv = node;
+        while (lineDiv && !lineDiv.classList?.contains('md-line')) lineDiv = lineDiv.parentElement;
+        // Remove cursor class from all lines
+        editor.querySelectorAll('.md-line.cursor').forEach(el => el.classList.remove('cursor'));
+        // Add to current line
+        if (lineDiv) lineDiv.classList.add('cursor');
     }
 
     // Set up the live editor
     function setupLiveEditor(editor) {
+        // Track cursor line on any selection change
+        document.addEventListener('selectionchange', function() {
+            if (document.activeElement === editor || editor.contains(document.activeElement)) {
+                updateCursorLine(editor);
+            }
+        });
+
         // On input, refresh decorations after a short delay
         let decorateTimer = null;
         editor.addEventListener('input', function() {
