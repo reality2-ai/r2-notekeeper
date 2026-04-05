@@ -1825,7 +1825,7 @@ function generateQrSvg(text, size) {
                     const url = `ws://localhost:${port}/r2`;
                     try {
                         const data = await resp.json();
-                        if (data.class === 'ai.reality2.wayfinder') {
+                        if (data.status === 'ok') {
                             log.info('Auto-discovered local wayfinder at ' + url);
                             return url;
                         }
