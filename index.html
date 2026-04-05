@@ -221,32 +221,21 @@
             color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.75;
             outline: none;
         }
-        /* Live markdown editor */
-        .md-editor {
+        /* Document editor */
+        .doc-editor {
             padding: 8px 32px 32px; min-height: 100%; outline: none;
             color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.75;
-            white-space: pre-wrap; word-wrap: break-word;
         }
-        .md-editor:empty::before { content: 'Start writing...'; color: var(--text-faint); pointer-events: none; }
-        /* Markdown syntax markers - hidden unless line has cursor */
-        .md-editor .mk { font-size: 0; color: transparent; transition: font-size 0.1s, color 0.1s; }
-        .md-editor .md-line.cursor .mk { font-size: 0.85em; color: var(--text-faint); font-weight: 400; }
-        /* Inline formatting rendered */
-        .md-editor .md-bold { font-weight: 600; color: var(--text); }
-        .md-editor .md-italic { font-style: italic; }
-        .md-editor .md-code { font-family: var(--mono); font-size: 13px; background: var(--surface2); padding: 1px 4px; border-radius: 3px; color: var(--accent); }
-        .md-editor .md-link-text { color: var(--accent); }
-        .md-editor .md-link-url { color: var(--text-faint); font-size: 0.85em; }
-        /* Block-level line styling */
-        .md-editor .md-line { display: block; min-height: 1.75em; }
-        .md-editor .md-line-h1 { font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: -0.3px; margin: 12px 0 6px; }
-        .md-editor .md-line-h2 { font-family: var(--display); font-size: 20px; font-weight: 600; margin: 10px 0 4px; }
-        .md-editor .md-line-h3 { font-family: var(--sans); font-size: 16px; font-weight: 600; margin: 8px 0 2px; }
-        .md-editor .md-line-quote { border-left: 3px solid var(--accent-dim); padding-left: 14px; color: var(--text-dim); font-style: italic; }
-        .md-editor .md-line-li { padding-left: 16px; }
-        .md-editor .md-line-hr { border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px; }
-        .md-editor .md-line-code { font-family: var(--mono); font-size: 13px; background: var(--surface); padding: 2px 8px; border-radius: 4px; }
-        .md-editor .md-line-cb { padding-left: 4px; }
+        .doc-editor:empty::before { content: 'Start writing...'; color: var(--text-faint); pointer-events: none; }
+        .doc-editor [data-type="h"] { font-family: var(--display); font-size: 20px; font-weight: 600; margin: 10px 0 4px; }
+        .doc-editor [data-type="li"] { padding-left: 20px; position: relative; }
+        .doc-editor [data-type="li"]::before { content: '\2022'; position: absolute; left: 6px; color: var(--text-dim); }
+        .doc-editor [data-type="cb"] { padding-left: 4px; display: flex; align-items: flex-start; gap: 8px; }
+        .doc-editor [data-type="cb"] input { margin-top: 5px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+        .doc-editor [data-type="cb"].checked .cb-text { text-decoration: line-through; opacity: 0.5; }
+        .doc-editor .cb-text { flex: 1; outline: none; }
+        .doc-editor [data-type="p"], .doc-editor [data-type="h"],
+        .doc-editor [data-type="li"] { min-height: 1.6em; }
         .editor-preview[contenteditable]:empty::before {
             content: 'Start writing...';
             color: var(--text-faint);
@@ -447,22 +436,15 @@
                         <button class="fmt-btn" onclick="fmt('heading')" title="Heading">H</button>
                         <button class="fmt-btn" onclick="fmt('bold')" title="Bold"><strong>B</strong></button>
                         <button class="fmt-btn" onclick="fmt('italic')" title="Italic"><em>I</em></button>
-                        <button class="fmt-btn" onclick="fmt('code')" title="Inline code">&lt;/&gt;</button>
-                        <button class="fmt-btn" onclick="fmt('codeblock')" title="Code block">```</button>
                         <div class="fmt-sep"></div>
-                        <button class="fmt-btn" onclick="fmt('ul')" title="Bullet list">&bull; List</button>
-                        <button class="fmt-btn" onclick="fmt('ol')" title="Numbered list">1. List</button>
-                        <button class="fmt-btn" onclick="fmt('quote')" title="Blockquote">&gt;</button>
+                        <button class="fmt-btn" onclick="fmt('ul')" title="Bullet list">&bull;</button>
                         <button class="fmt-btn" onclick="fmt('checkbox')" title="Checkbox">&#9744;</button>
-                        <button class="fmt-btn" onclick="fmt('hr')" title="Horizontal rule">&mdash;</button>
-                        <button class="fmt-btn" onclick="fmt('link')" title="Link">Link</button>
+                        <button class="fmt-btn" onclick="fmt('hr')" title="Line">&mdash;</button>
                     </div>
                 </div>
                 <div class="editor-scroll">
-                    <!-- Live markdown editor: raw markdown with inline decorations -->
-                    <div class="md-editor" id="md-editor" contenteditable="true"></div>
-                    <!-- Hidden textarea keeps markdown in sync for form submission / copy -->
-                    <textarea id="editor-content" style="display:none"></textarea>
+                    <div class="doc-editor" id="doc-editor" contenteditable="true"></div>
+                    <input type="hidden" id="editor-content">
                 </div>
             </div>
         </div>
@@ -965,10 +947,10 @@ function generateQrSvg(text, size) {
     }
 
     // ══════════════════════════════════════════════════════════════
-    // Markdown-backed visual editor
-    // Markdown string is the single source of truth (hidden textarea).
-    // Visual div renders FROM markdown. User edits are intercepted
-    // and applied as markdown string operations. No HTML-to-markdown.
+    // Document Model Editor
+    // Simple WYSIWYG. Content stored as HTML string.
+    // Five block types: p, h, li, cb. Two marks: bold, italic.
+    // contenteditable handles all editing. No markdown conversion.
     // ══════════════════════════════════════════════════════════════
 
     // ══════════════════════════════════════════════════════════════
@@ -998,304 +980,159 @@ function generateQrSvg(text, size) {
         }
     }
 
-    // ── Live Markdown Decorator ──
-    // Takes a line of markdown, returns HTML with formatting markers
-    // dimmed and content styled. The raw markdown text is preserved
-    // in the DOM so the cursor moves through actual markdown characters.
 
-    function decorateLine(text) {
-        if (!text) return '';
-        let h = escHtml(text);
-        // Inline code: dim the backticks, style the content
-        h = h.replace(/`([^`]*)`/g, '<span class="mk">`</span><span class="md-code">$1</span><span class="mk">`</span>');
-        // Bold italic
-        h = h.replace(/\*\*\*(.+?)\*\*\*/g, '<span class="mk">***</span><span class="md-bold md-italic">$1</span><span class="mk">***</span>');
-        // Bold
-        h = h.replace(/\*\*(.+?)\*\*/g, '<span class="mk">**</span><span class="md-bold">$1</span><span class="mk">**</span>');
-        // Italic
-        h = h.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<span class="mk">*</span><span class="md-italic">$1</span><span class="mk">*</span>');
-        // Links: [text](url) - dim brackets and url
-        h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span class="mk">[</span><span class="md-link-text">$1</span><span class="mk">](</span><span class="md-link-url">$2</span><span class="mk">)</span>');
-        return h;
+    // Get editor content as HTML string for storage/sync
+    function getCurrentContent() {
+        return document.getElementById('doc-editor').innerHTML;
+    }
+    function getCurrentMarkdown() { return getCurrentContent(); }
+
+    // Render stored content into the editor
+    function loadContent(html, editor) {
+        editor.innerHTML = html || '<div data-type="p"><br></div>';
     }
 
-    // Render markdown into the live editor with decorations.
-    // Each line becomes a <div class="md-line"> with decorated content.
-    // The actual markdown characters are preserved in the DOM text.
-    function renderLiveEditor(md, container) {
-        const lines = md.split('\n');
-        const els = [];
-        let inCodeBlock = false;
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const div = document.createElement('div');
-            div.className = 'md-line';
-
-            if (line.startsWith('```')) {
-                inCodeBlock = !inCodeBlock;
-                div.className = 'md-line md-line-code';
-                div.innerHTML = '<span class="mk">' + escHtml(line) + '</span>';
-            } else if (inCodeBlock) {
-                div.className = 'md-line md-line-code';
-                div.textContent = line;
-            } else if (line.match(/^#{1,3} /)) {
-                const level = line.match(/^(#{1,3}) /)[1].length;
-                div.className = 'md-line md-line-h' + level;
-                const prefix = line.slice(0, level + 1);
-                const content = line.slice(level + 1);
-                div.innerHTML = '<span class="mk">' + escHtml(prefix) + '</span>' + decorateLine(content);
-            } else if (line === '---') {
-                div.className = 'md-line md-line-hr';
-                div.innerHTML = '<span class="mk">---</span>';
-            } else if (line.match(/^> /)) {
-                div.className = 'md-line md-line-quote';
-                div.innerHTML = '<span class="mk">&gt; </span>' + decorateLine(line.slice(2));
-            } else if (line.match(/^- \[[ x]\] /)) {
-                div.className = 'md-line md-line-cb';
-                const checked = line[3] === 'x';
-                div.innerHTML = '<span class="mk">- [' + (checked ? 'x' : ' ') + '] </span>' +
-                    (checked ? '<span class="md-italic" style="opacity:0.5;text-decoration:line-through">' : '') +
-                    decorateLine(line.slice(6)) +
-                    (checked ? '</span>' : '');
-            } else if (line.match(/^[-*] /)) {
-                div.className = 'md-line md-line-li';
-                div.innerHTML = '<span class="mk">' + escHtml(line.slice(0, 2)) + '</span>' + decorateLine(line.slice(2));
-            } else if (line.match(/^\d+\. /)) {
-                const m = line.match(/^(\d+\. )/);
-                div.className = 'md-line md-line-li';
-                div.innerHTML = '<span class="mk">' + escHtml(m[1]) + '</span>' + decorateLine(line.slice(m[1].length));
-            } else {
-                div.className = 'md-line';
-                div.innerHTML = decorateLine(line) || '<br>';
-            }
-
-            els.push(div);
+    function ensureBlock(editor) {
+        if (!editor.querySelector('[data-type]')) {
+            editor.innerHTML = '<div data-type="p"><br></div>';
         }
-
-        container.innerHTML = '';
-        els.forEach(el => container.appendChild(el));
     }
 
-    // ── Live Editor: extract markdown from contenteditable ──
-    // The editor contains raw markdown text with decoration spans.
-    // Extract plain text to get the markdown back.
-    function getEditorMarkdown() {
-        const editor = document.getElementById('md-editor');
-        const lines = [];
-        editor.querySelectorAll('.md-line').forEach(div => {
-            lines.push(div.textContent);
-        });
-        return lines.join('\n');
+    function createCheckboxBlock(checked, text) {
+        const div = document.createElement('div');
+        div.setAttribute('data-type', 'cb');
+        if (checked) div.classList.add('checked');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = checked;
+        const span = document.createElement('span');
+        span.className = 'cb-text';
+        span.contentEditable = 'true';
+        span.innerHTML = text || '<br>';
+        div.appendChild(cb);
+        div.appendChild(span);
+        return div;
     }
 
-    function getCurrentMarkdown() {
-        return getEditorMarkdown();
-    }
-
-    // Re-decorate the editor content while preserving cursor position.
-    // Save cursor as {lineIndex, charOffset} within the editor
-    function saveCursorPos(editor) {
-        const sel = window.getSelection();
-        if (!sel.rangeCount) return null;
-        const anchor = sel.anchorNode;
-        // Find which md-line div we're in
-        let lineDiv = anchor.nodeType === 3 ? anchor.parentElement : anchor;
-        while (lineDiv && !lineDiv.classList?.contains('md-line')) lineDiv = lineDiv.parentElement;
-        if (!lineDiv || !lineDiv.parentElement) return null;
-        // Line index
-        const lines = Array.from(editor.querySelectorAll('.md-line'));
-        const lineIndex = lines.indexOf(lineDiv);
-        if (lineIndex === -1) return null;
-        // Character offset within the line
-        const range = document.createRange();
-        range.setStart(lineDiv, 0);
-        range.setEnd(sel.anchorNode, sel.anchorOffset);
-        const charOffset = range.toString().length;
-        return { lineIndex, charOffset };
-    }
-
-    // Restore cursor to {lineIndex, charOffset}
-    function restoreCursorPos(editor, pos) {
-        if (!pos) return;
-        const lines = editor.querySelectorAll('.md-line');
-        if (pos.lineIndex >= lines.length) return;
-        const lineDiv = lines[pos.lineIndex];
-        // Walk text nodes within this line to find the right offset
-        const walker = document.createTreeWalker(lineDiv, NodeFilter.SHOW_TEXT);
-        let count = 0, node;
-        while (node = walker.nextNode()) {
-            if (count + node.length >= pos.charOffset) {
-                try {
-                    const sel = window.getSelection();
-                    const range = document.createRange();
-                    range.setStart(node, Math.min(pos.charOffset - count, node.length));
-                    range.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                } catch (e) {}
-                return;
-            }
-            count += node.length;
-        }
-        // Fallback: end of line
-        try {
-            const sel = window.getSelection();
-            const range = document.createRange();
-            range.selectNodeContents(lineDiv);
-            range.collapse(false);
-            sel.removeAllRanges();
-            sel.addRange(range);
-        } catch (e) {}
-    }
-
-    function refreshDecorations() {
-        const editor = document.getElementById('md-editor');
-        const pos = saveCursorPos(editor);
-        const md = getEditorMarkdown();
-        document.getElementById('editor-content').value = md;
-        renderLiveEditor(md, editor);
-        restoreCursorPos(editor, pos);
-        updateCursorLine(editor);
-    }
-
-    // Track which line has the cursor and add .cursor class
-    function updateCursorLine(editor) {
-        const sel = window.getSelection();
-        if (!sel.rangeCount) return;
-        let node = sel.anchorNode;
-        if (node.nodeType === 3) node = node.parentElement;
-        let lineDiv = node;
-        while (lineDiv && !lineDiv.classList?.contains('md-line')) lineDiv = lineDiv.parentElement;
-        // Remove cursor class from all lines
-        editor.querySelectorAll('.md-line.cursor').forEach(el => el.classList.remove('cursor'));
-        // Add to current line
-        if (lineDiv) lineDiv.classList.add('cursor');
-    }
-
-    // Set up the live editor
-    function setupLiveEditor(editor) {
-        // Track cursor line on any selection change
-        document.addEventListener('selectionchange', function() {
-            if (document.activeElement === editor || editor.contains(document.activeElement)) {
-                updateCursorLine(editor);
-            }
-        });
-
-        // On input, refresh decorations after a short delay
-        let decorateTimer = null;
-        editor.addEventListener('input', function() {
-            document.getElementById('editor-content').value = getEditorMarkdown();
-            markDirty();
-            // Debounce decoration refresh to avoid cursor jumps on every keystroke
-            clearTimeout(decorateTimer);
-            decorateTimer = setTimeout(refreshDecorations, 800);
-        });
-
-        // On Enter, handle smart prefix continuation
+    function setupDocEditor(editor) {
         editor.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-                // Get current line text before cursor
+            if (e.key === 'Enter' && !e.shiftKey) {
                 const sel = window.getSelection();
                 if (!sel.rangeCount) return;
-                const node = sel.anchorNode;
-                let lineDiv = node.nodeType === 3 ? node.parentElement : node;
-                while (lineDiv && !lineDiv.classList.contains('md-line')) lineDiv = lineDiv.parentElement;
-                if (!lineDiv) return;
+                let block = sel.anchorNode;
+                if (block.nodeType === 3) block = block.parentElement;
+                while (block && !block.dataset?.type) block = block.parentElement;
+                if (!block) return;
+                const type = block.dataset.type;
 
-                const lineText = lineDiv.textContent;
-                const prefix = (lineText.match(/^([-*] \[[ x]\] |[-*] |\d+\. |> )/) || [''])[0];
-
-                if (prefix && lineText.trim() === prefix.trim()) {
-                    // Empty formatted line - clear the prefix
+                if ((type === 'li' || type === 'cb') && block.textContent.trim() === '') {
                     e.preventDefault();
-                    lineDiv.textContent = '';
-                    lineDiv.innerHTML = '<br>';
+                    const p = document.createElement('div');
+                    p.setAttribute('data-type', 'p');
+                    p.innerHTML = '<br>';
+                    block.replaceWith(p);
                     const range = document.createRange();
-                    range.setStart(lineDiv, 0);
-                    range.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                    markDirty();
-                } else if (prefix && !prefix.match(/^#{1,3} /)) {
-                    // Continue prefix on new line
-                    e.preventDefault();
-                    const contPrefix = prefix.match(/^\d+\. /)
-                        ? (parseInt(prefix) + 1) + '. '
-                        : prefix.replace(/\[x\]/, '[ ]');
-                    document.execCommand('insertText', false, '\n' + contPrefix);
-                    markDirty();
+                    range.setStart(p, 0); range.collapse(true);
+                    sel.removeAllRanges(); sel.addRange(range);
+                    markDirty(); return;
                 }
-                // Else: normal Enter (browser handles it)
+                if (type === 'li') {
+                    e.preventDefault();
+                    const newLi = document.createElement('div');
+                    newLi.setAttribute('data-type', 'li');
+                    newLi.innerHTML = '<br>';
+                    block.after(newLi);
+                    const range = document.createRange();
+                    range.setStart(newLi, 0); range.collapse(true);
+                    sel.removeAllRanges(); sel.addRange(range);
+                    markDirty(); return;
+                }
+                if (type === 'cb') {
+                    e.preventDefault();
+                    const newCb = createCheckboxBlock(false, '');
+                    block.after(newCb);
+                    const textEl = newCb.querySelector('.cb-text');
+                    const range = document.createRange();
+                    range.setStart(textEl, 0); range.collapse(true);
+                    sel.removeAllRanges(); sel.addRange(range);
+                    markDirty(); return;
+                }
+                if (type === 'h') {
+                    e.preventDefault();
+                    const p = document.createElement('div');
+                    p.setAttribute('data-type', 'p');
+                    p.innerHTML = '<br>';
+                    block.after(p);
+                    const range = document.createRange();
+                    range.setStart(p, 0); range.collapse(true);
+                    sel.removeAllRanges(); sel.addRange(range);
+                    markDirty(); return;
+                }
+                setTimeout(() => {
+                    editor.querySelectorAll('div:not([data-type])').forEach(div => {
+                        if (div.parentElement === editor) div.setAttribute('data-type', 'p');
+                    });
+                }, 0);
             }
         });
-    }
 
-    // ── Formatting Commands ──
-    // Insert markdown syntax at cursor position.
-    // The live editor shows the result immediately via decorations.
+        editor.addEventListener('input', function() {
+            ensureBlock(editor);
+            markDirty();
+        });
 
-    function insertTextAtCursor(text) {
-        const editor = document.getElementById('md-editor');
-        editor.focus();
-        document.execCommand('insertText', false, text);
-    }
-
-    function getSelectedText() {
-        const sel = window.getSelection();
-        return sel.rangeCount ? sel.toString() : '';
+        editor.addEventListener('change', function(e) {
+            if (e.target.type === 'checkbox') {
+                const block = e.target.closest('[data-type="cb"]');
+                if (block) { block.classList.toggle('checked', e.target.checked); markDirty(); }
+            }
+        });
     }
 
     window.fmt = function(type) {
-        const editor = document.getElementById('md-editor');
+        const editor = document.getElementById('doc-editor');
         editor.focus();
-        const selected = getSelectedText();
+        const sel = window.getSelection();
+        let block = null;
+        if (sel.rangeCount) {
+            block = sel.anchorNode;
+            if (block.nodeType === 3) block = block.parentElement;
+            while (block && block !== editor && !block.dataset?.type) block = block.parentElement;
+            if (block === editor) block = null;
+        }
 
         switch (type) {
-            case 'paragraph': {
-                // Remove line prefix
-                // Handled by re-typing the line without prefix
+            case 'paragraph':
+                if (block) { block.setAttribute('data-type', 'p'); block.className = ''; }
                 break;
-            }
             case 'heading':
-                if (selected) { insertTextAtCursor('## ' + selected); }
-                else { insertTextAtCursor('## '); }
+                if (block) block.setAttribute('data-type', block.dataset.type === 'h' ? 'p' : 'h');
                 break;
             case 'bold':
-                insertTextAtCursor('**' + (selected || '') + '**');
+                document.execCommand('bold');
                 break;
             case 'italic':
-                insertTextAtCursor('*' + (selected || '') + '*');
-                break;
-            case 'code':
-                insertTextAtCursor('`' + (selected || '') + '`');
-                break;
-            case 'codeblock':
-                insertTextAtCursor('```\n' + (selected || '') + '\n```');
+                document.execCommand('italic');
                 break;
             case 'ul':
-                insertTextAtCursor('- ' + (selected || ''));
-                break;
-            case 'ol':
-                insertTextAtCursor('1. ' + (selected || ''));
-                break;
-            case 'quote':
-                insertTextAtCursor('> ' + (selected || ''));
+                if (block) block.setAttribute('data-type', block.dataset.type === 'li' ? 'p' : 'li');
                 break;
             case 'checkbox':
-                insertTextAtCursor('- [ ] ' + (selected || ''));
+                if (block) {
+                    const text = block.textContent;
+                    const newCb = createCheckboxBlock(false, escHtml(text));
+                    block.replaceWith(newCb);
+                    const textEl = newCb.querySelector('.cb-text');
+                    const range = document.createRange();
+                    range.selectNodeContents(textEl); range.collapse(false);
+                    sel.removeAllRanges(); sel.addRange(range);
+                }
                 break;
             case 'hr':
-                insertTextAtCursor('\n---\n');
+                document.execCommand('insertHorizontalRule');
                 break;
-            case 'link': {
-                const url = prompt('URL:');
-                if (url) insertTextAtCursor('[' + (selected || 'link') + '](' + url + ')');
-                break;
-            }
         }
         markDirty();
-        setTimeout(refreshDecorations, 100);
     };
 
     // ── Hive Event Processing ──
@@ -1466,7 +1303,7 @@ function generateQrSvg(text, size) {
         const n = notes[currentNoteId];
         document.getElementById('editor-title').value = n.title;
         document.getElementById('editor-content').value = n.content || '';
-        renderLiveEditor(n.content || '', document.getElementById('md-editor'));
+        loadContent(n.content || '', document.getElementById('doc-editor'));
         document.getElementById('editor-meta').textContent = `${n.id} \u00b7 ${timeAgo(n.updated_at)}`;
     }
     function renderEventLog() {
@@ -2000,7 +1837,7 @@ function generateQrSvg(text, size) {
     document.getElementById('editor-title').addEventListener('input', markDirty);
 
     // Set up the live markdown editor
-    setupLiveEditor(document.getElementById('md-editor'));
+    setupDocEditor(document.getElementById('doc-editor'));
     window.addEventListener('beforeunload', () => flushIfDirty());
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushIfDirty(); });
 
