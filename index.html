@@ -1590,6 +1590,9 @@ function generateQrSvg(text, size) {
 
     window.generateNewInvite = function() {
         if (!trustGroup) return;
+        if (!relay || !relay.connected) {
+            alert('Relay is not connected. The joining device won\'t be able to reach you.\n\nCheck Settings → Relay and reconnect first.');
+        }
         const codeHex = trustGroup.generate_join_code(now(), BigInt(300));
 
         // Short code (tg hash prefix + join code prefix)
