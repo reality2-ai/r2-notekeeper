@@ -1,7 +1,7 @@
 // R2 Notekeeper Service Worker
 // Caches all app files on first visit. Serves from cache when offline.
 
-const CACHE_NAME = 'notekeeper-0.4.4';
+const CACHE_NAME = 'notekeeper-0.4.5';
 const ASSETS = [
     './',
     './index.html',

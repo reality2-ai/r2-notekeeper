@@ -689,9 +689,7 @@ function generateQrSvg(text, size) {
                             this._setStatus(`relay: ${msg.peers} peer${msg.peers !== 1 ? 's' : ''}`);
                             this._startPing();
                             const lastEvent = events.length > 0 ? events[0].ts : 0;
-                            if (lastEvent > 0) {
-                                this.ws.send(JSON.stringify({ type: 'catchup', since: lastEvent }));
-                            }
+                            this.ws.send(JSON.stringify({ type: 'catchup', since: lastEvent }));
                         }
                     } catch {}
                 } else {
