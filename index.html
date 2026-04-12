@@ -1527,6 +1527,8 @@ function generateQrSvg(text, size) {
         } else {
             panel.classList.add('open');
             backdrop.classList.add('open');
+            // Ensure relay is connected (join requests need a live WebSocket)
+            if (relay && !relay.connected) relay.connect();
             // Identity
             document.getElementById('settings-tg-id').textContent = tgShort;
             document.getElementById('settings-role').textContent = isKeyHolder ? 'Key Holder' : 'Member';
