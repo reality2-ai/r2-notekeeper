@@ -1,0 +1,189 @@
+# Notekeeper — personal notes across trust group devices.
+#
+# First use of the R2-DEF §7 Ensemble Definition Schema.
+# Conformance target: ensemble_version "0.1" (2026-04-14).
+#
+# This file is the normative description of the Notekeeper ensemble.
+# Hives consuming it instantiate one Note sentant, the notekeeper.sync
+# ensemble-owned plugin, and register a web fragment with the hive's
+# R2-WEB singleton plugin. Subsequent mesh replication is via the
+# timestamp-based LWW merge pattern established in the existing
+# browser-WASM implementation.
+
+ensemble:
+  name: notekeeper
+  description: "Personal notes across trust group devices with LWW sync"
+  version: "0.5.0"
+  class: ai.reality2.ensemble.notekeeper
+  ensemble_version: "0.1"
+
+  # ─── Sentants ───────────────────────────────────────────────────────
+  sentants:
+    - name: Note
+      description: >
+        Holds note content, keyed by stable UUID per note.
+        Merges incoming updates by last-writer-wins on the note's
+        `ts` field. Emits public events for UI consumption and for
+        peer replication via notekeeper.sync.
+      class: ai.reality2.sentant.note
+      storage: durable-state
+      data:
+        notes: {}          # { noteId: { id, title, content, ts, deleted? } }
+        last_ts: 0          # most recent observed timestamp (for catchup requests)
+      plugins:
+        - name: notekeeper.sync
+      automations:
+        - name: main
+          transitions:
+            # ─── Create / update ────────────────────────────────────
+            - event: note.add
+              public: true
+              actions:
+                - command: set
+                  parameters:
+                    key: "notes.{{params.id}}"
+                    value:
+                      id: "{{params.id}}"
+                      title: "{{params.title}}"
+                      content: "{{params.content}}"
+                      ts: "{{params.ts}}"
+                - command: set
+                  parameters:
+                    key: last_ts
+                    value: "{{max(last_ts, params.ts)}}"
+                - plugin: notekeeper.sync
+                  command: broadcast
+                  parameters:
+                    op: add
+                    note: "{{params}}"
+                - command: send
+                  parameters:
+                    event: note.changed
+                    public: true
+                    parameters:
+                      id: "{{params.id}}"
+
+            # ─── Delete (tombstone) ─────────────────────────────────
+            - event: note.delete
+              public: true
+              actions:
+                - command: set
+                  parameters:
+                    key: "notes.{{params.id}}"
+                    value:
+                      id: "{{params.id}}"
+                      deleted: true
+                      ts: "{{params.ts}}"
+                - command: set
+                  parameters:
+                    key: last_ts
+                    value: "{{max(last_ts, params.ts)}}"
+                - plugin: notekeeper.sync
+                  command: broadcast
+                  parameters:
+                    op: delete
+                    note: "{{params}}"
+                - command: send
+                  parameters:
+                    event: note.changed
+                    public: true
+                    parameters:
+                      id: "{{params.id}}"
+
+            # ─── Query / list ───────────────────────────────────────
+            - event: note.list
+              public: true
+              actions:
+                - command: send
+                  parameters:
+                    event: note.list.result
+                    public: true
+                    parameters:
+                      notes: "{{values(notes)}}"
+
+            - event: note.get
+              public: true
+              actions:
+                - command: send
+                  parameters:
+                    event: note.get.result
+                    public: true
+                    parameters:
+                      note: "{{notes[params.id]}}"
+
+            # ─── Incoming sync from peer (via notekeeper.sync) ──────
+            - event: notekeeper.sync
+              # LWW merge: only accept incoming if ts > current ts for that id
+              actions:
+                - command: test
+                  parameters:
+                    condition: "{{params.data.note.ts > (notes[params.data.note.id].ts or 0)}}"
+                    then:
+                      - command: set
+                        parameters:
+                          key: "notes.{{params.data.note.id}}"
+                          value: "{{params.data.note}}"
+                      - command: set
+                        parameters:
+                          key: last_ts
+                          value: "{{max(last_ts, params.data.note.ts)}}"
+                      - command: send
+                        parameters:
+                          event: note.changed
+                          public: true
+                          parameters:
+                            id: "{{params.data.note.id}}"
+
+  # ─── Ensemble-owned plugins ─────────────────────────────────────────
+  plugins:
+    - name: notekeeper.sync
+      description: >
+        Encrypted note event replication over mesh. Wraps outbound
+        note events with trust-group encryption and emits them as
+        R2-WIRE events for mesh relay. On incoming events,
+        decrypts and re-emits as notekeeper.sync events for the
+        Note sentant to merge.
+      kind: inline
+      compile_target: [linux, esp32-s3]
+      # Concrete handler registration per R2-PLUGIN §3 omitted here — the
+      # plugin is implemented in notekeeper.Plugins.Sync in the Elixir
+      # ref impl and in crate notekeeper-sync (Rust) for MCU targets.
+
+  # ─── Registrations with hive-shared singleton plugins ───────────────
+  registrations:
+    r2-web:
+      route_prefix: /notekeeper
+      static_bundle: ./web/
+      graphql:
+        schema: ./web/schema.graphql
+        resolvers: notekeeper.GraphqlResolvers
+      subscriptions:
+        - name: noteStream
+          event: note.changed
+          # Client subscribes; server pushes on every note.changed event
+
+  # ─── Aggregate capabilities ─────────────────────────────────────────
+  capabilities:
+    emits:
+      - note.changed
+      - note.list.result
+      - note.get.result
+    consumes:
+      - note.add
+      - note.delete
+      - note.list
+      - note.get
+      - notekeeper.sync
+
+  # ─── Compile target ─────────────────────────────────────────────────
+  # Default to Linux-only while MCU subset is future work. Phase 6 of
+  # the Notekeeper migration enables ESP32-S3 by setting
+  # compile_target: [linux, esp32-s3] and providing sentant-subset
+  # constraints per R2-COMPILE.
+  compile_target: [linux]
+
+  # ─── Signatures ─────────────────────────────────────────────────────
+  # Local development form — unsigned. For trust-group distribution,
+  # the key-holder signs this file with Ed25519 per R2-DEF §7.8 and
+  # the signatures array is populated before publish.
+  signatures: []
