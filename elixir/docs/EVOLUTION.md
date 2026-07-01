@@ -173,14 +173,14 @@ the full catalogue.
   "modified_by": "device-id",
 
   "who": "Roy Davies",
-  "what": "Photo of Wairoa River at flood stage",
+  "what": "Photo of river at flood stage",
   "where": {
-    "name": "Wairoa River, Hawke's Bay",
-    "lat": -39.0567,
-    "lon": 177.0542
+    "name": "Riverbend monitoring site",
+    "lat": -41.1234,
+    "lon": 174.5678
   },
   "when": "2026-03-31T14:23:00Z",
-  "tags": ["wairoa", "flood", "monitoring"],
+  "tags": ["river", "flood", "monitoring"],
 
   "stored_on": ["device-A", "device-B"],
   "redundancy": 2,
@@ -191,7 +191,7 @@ the full catalogue.
 
 The core fields — **who, what, where, when** — are human-facing context
 that makes content discoverable across all devices. A watch shows "Roy's
-photo of Wairoa River flood, 2:23pm" without needing the actual image.
+photo of river flood, 2:23pm" without needing the actual image.
 A phone shows a thumbnail. The home server has the full resolution file.
 
 Core metadata is small (~500 bytes per object). A collection of 10,000
@@ -249,10 +249,10 @@ Transcripts enable text search across voice memos from any device.
 ```json
 {
   "content_type": "application/pdf",
-  "title": "Wairoa Flood Risk Assessment 2026",
-  "author": "Hawke's Bay Regional Council",
+  "title": "River Flood Risk Assessment 2026",
+  "author": "Regional Council",
   "pages": 42,
-  "summary": "Assessment of flood risk for the Wairoa River catchment..."
+  "summary": "Assessment of flood risk for the river catchment..."
 }
 ```
 
